@@ -1,0 +1,657 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>クリニック勤務者確認システム</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.4.1/papaparse.min.js"></script>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background-color: #f5f5f5;
+            color: #333;
+            line-height: 1.6;
+        }
+        
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+        
+        h1 {
+            text-align: center;
+            margin-bottom: 30px;
+            color: #2c3e50;
+        }
+        
+        .section {
+            background: white;
+            border-radius: 10px;
+            padding: 25px;
+            margin-bottom: 20px;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+        }
+        
+        .section-title {
+            font-size: 20px;
+            font-weight: bold;
+            margin-bottom: 15px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        
+        .today-section {
+            background-color: #e3f2fd;
+        }
+        
+        .staff-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+            gap: 10px;
+            margin-top: 15px;
+        }
+        
+        .staff-card {
+            background: white;
+            padding: 10px 15px;
+            border-radius: 5px;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+            text-align: center;
+        }
+        
+        .upload-button {
+            background-color: #2196F3;
+            color: white;
+            padding: 10px 20px;
+            border-radius: 5px;
+            cursor: pointer;
+            display: inline-block;
+            transition: background-color 0.3s;
+        }
+        
+        .upload-button:hover {
+            background-color: #1976D2;
+        }
+        
+        .file-input {
+            display: none;
+        }
+        
+        .uploaded-files {
+            margin-top: 20px;
+        }
+        
+        .file-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 10px;
+            background: #f9f9f9;
+            border-radius: 5px;
+            margin-bottom: 10px;
+        }
+        
+        .delete-button {
+            background: #f44336;
+            color: white;
+            border: none;
+            padding: 5px 10px;
+            border-radius: 3px;
+            cursor: pointer;
+        }
+        
+        .calendar-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+        }
+        
+        .calendar-nav {
+            background: none;
+            border: none;
+            font-size: 24px;
+            cursor: pointer;
+            padding: 5px 15px;
+        }
+        
+        .calendar-nav:hover {
+            background-color: #f0f0f0;
+            border-radius: 5px;
+        }
+        
+        .calendar-grid {
+            display: grid;
+            grid-template-columns: repeat(7, 1fr);
+            gap: 5px;
+        }
+        
+        .weekday-header {
+            text-align: center;
+            font-weight: bold;
+            padding: 10px;
+            font-size: 14px;
+        }
+        
+        .calendar-day {
+            aspect-ratio: 1;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            border-radius: 5px;
+            position: relative;
+            background: white;
+            border: 1px solid #e0e0e0;
+            font-size: 16px;
+            padding: 2px;
+        }
+        
+        .calendar-day-number {
+            font-size: 16px;
+            line-height: 1.2;
+        }
+        
+        .calendar-doctors {
+            font-size: 9px;
+            color: #d32f2f;
+            font-weight: bold;
+            text-align: center;
+            margin-top: 2px;
+            line-height: 1.1;
+            word-break: break-all;
+        }
+        
+        .calendar-staff {
+            font-size: 9px;
+            color: #1976d2;
+            font-weight: bold;
+            text-align: center;
+            line-height: 1.1;
+            word-break: break-all;
+        }
+        
+        .calendar-special {
+            font-size: 9px;
+            color: #388e3c;
+            font-weight: bold;
+            text-align: center;
+            line-height: 1.1;
+            word-break: break-all;
+        }
+        
+        .calendar-day:hover {
+            background-color: #f0f0f0;
+        }
+        
+        .calendar-day.other-month {
+            color: #ccc;
+        }
+        
+        .calendar-day.today {
+            background-color: #bbdefb;
+            font-weight: bold;
+        }
+        
+        .calendar-day.selected {
+            border: 2px solid #2196F3;
+        }
+        
+        .calendar-day.has-staff::after {
+            content: '';
+            position: absolute;
+            bottom: 5px;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 6px;
+            height: 6px;
+            background-color: #2196F3;
+            border-radius: 50%;
+        }
+        
+        .no-data {
+            color: #999;
+            text-align: center;
+            padding: 20px;
+        }
+        
+        @media (max-width: 768px) {
+            .container {
+                padding: 10px;
+            }
+            
+            .section {
+                padding: 15px;
+            }
+            
+            .staff-grid {
+                grid-template-columns: repeat(auto-fill, minmax(120px, 1fr));
+            }
+            
+            .calendar-day {
+                font-size: 14px;
+            }
+            
+            .calendar-day-number {
+                font-size: 14px;
+            }
+            
+            .calendar-doctors {
+                font-size: 8px;
+            }
+            
+            .calendar-staff {
+                font-size: 8px;
+            }
+            
+            .calendar-special {
+                font-size: 8px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>クリニック勤務者確認システム</h1>
+        
+        <!-- 本日の勤務者 -->
+        <div class="section today-section">
+            <h2 class="section-title">
+                👥 本日の勤務者（<span id="today-date"></span>）
+            </h2>
+            <div id="today-staff" class="staff-grid"></div>
+        </div>
+        
+        <!-- データ管理 -->
+        <div class="section">
+            <h3 class="section-title">📁 データ管理</h3>
+            <label class="upload-button">
+                <input type="file" class="file-input" id="csv-upload" accept=".csv">
+                📤 CSVファイルをアップロード
+            </label>
+            <div class="uploaded-files" id="uploaded-files"></div>
+        </div>
+        
+        <!-- カレンダー -->
+        <div class="section">
+            <div class="calendar-header">
+                <button class="calendar-nav" onclick="changeMonth(-1)">◀</button>
+                <h3 id="calendar-month"></h3>
+                <button class="calendar-nav" onclick="changeMonth(1)">▶</button>
+            </div>
+            <div class="calendar-grid" id="calendar"></div>
+        </div>
+        
+        <!-- 選択日の勤務者 -->
+        <div class="section" style="background-color: #e8f5e9;">
+            <h3 class="section-title">
+                📅 <span id="selected-date"></span>の勤務者
+            </h3>
+            <div id="selected-staff" class="staff-grid"></div>
+        </div>
+    </div>
+
+    <script>
+        // グローバル変数
+        let attendanceData = {};
+        let selectedDate = new Date();
+        let currentMonth = new Date();
+        let uploadedFiles = [];
+        let useLocalStorage = true;
+        
+        // ローカルストレージが使用可能かチェック
+        function checkLocalStorage() {
+            try {
+                const test = '__localStorage_test__';
+                localStorage.setItem(test, test);
+                localStorage.removeItem(test);
+                return true;
+            } catch(e) {
+                console.log('LocalStorage is not available. Running in memory-only mode.');
+                return false;
+            }
+        }
+        
+        // 初期化
+        document.addEventListener('DOMContentLoaded', function() {
+            // ローカルストレージの可用性をチェック
+            useLocalStorage = checkLocalStorage();
+            
+            // ローカルストレージからデータを読み込む（可能な場合）
+            if (useLocalStorage) {
+                const savedData = localStorage.getItem('clinicAttendanceData');
+                if (savedData) {
+                    try {
+                        attendanceData = JSON.parse(savedData);
+                    } catch(e) {
+                        console.error('Failed to parse saved data:', e);
+                    }
+                }
+                
+                const savedFiles = localStorage.getItem('uploadedFiles');
+                if (savedFiles) {
+                    try {
+                        uploadedFiles = JSON.parse(savedFiles);
+                    } catch(e) {
+                        console.error('Failed to parse saved files:', e);
+                    }
+                }
+            }
+            
+            // UIを初期化
+            updateTodayDate();
+            updateCalendar();
+            updateSelectedDate();
+            displayTodayStaff();
+            displaySelectedStaff();
+            displayUploadedFiles();
+            
+            // ファイルアップロードのイベントリスナー
+            document.getElementById('csv-upload').addEventListener('change', handleFileUpload);
+        });
+        
+        // 日付フォーマット関数
+        function formatDate(date) {
+            const year = date.getFullYear();
+            const month = String(date.getMonth() + 1).padStart(2, '0');
+            const day = String(date.getDate()).padStart(2, '0');
+            return `${year}-${month}-${day}`;
+        }
+        
+        function formatDateJP(date) {
+            const year = date.getFullYear();
+            const month = date.getMonth() + 1;
+            const day = date.getDate();
+            const weekdays = ['日', '月', '火', '水', '木', '金', '土'];
+            const weekday = weekdays[date.getDay()];
+            return `${year}年${month}月${day}日(${weekday})`;
+        }
+        
+        // 本日の日付を更新
+        function updateTodayDate() {
+            document.getElementById('today-date').textContent = formatDateJP(new Date());
+        }
+        
+        // 選択日を更新
+        function updateSelectedDate() {
+            document.getElementById('selected-date').textContent = formatDateJP(selectedDate);
+        }
+        
+        // CSVパース関数
+        function parseAttendanceCSV(csvContent, fileName) {
+            const parsed = Papa.parse(csvContent, {
+                header: false,
+                dynamicTyping: true,
+                skipEmptyLines: false
+            });
+            
+            const data = parsed.data;
+            
+            // ファイル名から年月を推測
+            let year = 2025;
+            let month = 5;
+            const yearMatch = fileName.match(/(\d{4})/);
+            const monthMatch = fileName.match(/\.(\d{1,2})/);
+            if (yearMatch) year = parseInt(yearMatch[1]);
+            if (monthMatch) month = parseInt(monthMatch[1]);
+            
+            // スタッフデータを解析
+            const monthData = {};
+            
+            for (let i = 5; i < data.length; i++) {
+                const row = data[i];
+                if (!row || !row[1] || typeof row[1] !== 'string') continue;
+                
+                const staffName = row[1];
+                // 集計行をスキップ
+                if (['出勤', '医師', '看・技', '事務'].includes(staffName)) continue;
+                
+                // 各日の勤務状況を確認
+                for (let day = 1; day <= 31; day++) {
+                    const cellValue = row[day + 2]; // 3列目から開始
+                    
+                    // 数字の場合のみ勤務とみなす
+                    if (typeof cellValue === 'number' && cellValue > 0) {
+                        const dateKey = `${year}-${String(month).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
+                        
+                        if (!monthData[dateKey]) {
+                            monthData[dateKey] = [];
+                        }
+                        monthData[dateKey].push(staffName);
+                    }
+                }
+            }
+            
+            return monthData;
+        }
+        
+        // ファイルアップロード処理
+        function handleFileUpload(event) {
+            const file = event.target.files[0];
+            if (!file) return;
+            
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                try {
+                    const content = e.target.result;
+                    const newData = parseAttendanceCSV(content, file.name);
+                    
+                    // 既存データとマージ
+                    attendanceData = { ...attendanceData, ...newData };
+                    
+                    // アップロードファイルリストに追加
+                    const newFileInfo = {
+                        name: file.name,
+                        uploadDate: new Date().toISOString(),
+                        id: Date.now()
+                    };
+                    uploadedFiles.push(newFileInfo);
+                    
+                    // 保存
+                    saveData();
+                    
+                    // UIを更新
+                    displayTodayStaff();
+                    displaySelectedStaff();
+                    displayUploadedFiles();
+                    updateCalendar();
+                    
+                    alert('ファイルのアップロードが完了しました！');
+                } catch(error) {
+                    console.error('Error processing file:', error);
+                    alert('ファイルの処理中にエラーが発生しました。CSVファイルの形式を確認してください。');
+                }
+            };
+            reader.readAsText(file);
+            
+            // ファイル選択をリセット
+            event.target.value = '';
+        }
+        
+        // データ保存
+        function saveData() {
+            if (useLocalStorage) {
+                try {
+                    localStorage.setItem('clinicAttendanceData', JSON.stringify(attendanceData));
+                    localStorage.setItem('uploadedFiles', JSON.stringify(uploadedFiles));
+                } catch(e) {
+                    console.error('Failed to save to localStorage:', e);
+                }
+            }
+        }
+        
+        // ファイル削除
+        function removeFile(fileId) {
+            uploadedFiles = uploadedFiles.filter(f => f.id !== fileId);
+            saveData();
+            displayUploadedFiles();
+        }
+        
+        // アップロード済みファイルを表示
+        function displayUploadedFiles() {
+            const container = document.getElementById('uploaded-files');
+            if (uploadedFiles.length === 0) {
+                container.innerHTML = '';
+                return;
+            }
+            
+            container.innerHTML = '<h4 style="margin-top: 20px; margin-bottom: 10px;">アップロード済みファイル:</h4>';
+            uploadedFiles.forEach(file => {
+                const fileDiv = document.createElement('div');
+                fileDiv.className = 'file-item';
+                fileDiv.innerHTML = `
+                    <span>${file.name}</span>
+                    <button class="delete-button" onclick="removeFile(${file.id})">削除</button>
+                `;
+                container.appendChild(fileDiv);
+            });
+        }
+        
+        // 本日の勤務者を表示
+        function displayTodayStaff() {
+            const container = document.getElementById('today-staff');
+            const todayKey = formatDate(new Date());
+            const staff = attendanceData[todayKey] || [];
+            
+            if (staff.length === 0) {
+                container.innerHTML = '<div class="no-data">本日の勤務者データがありません</div>';
+            } else {
+                container.innerHTML = staff.map(name => 
+                    `<div class="staff-card">${name}</div>`
+                ).join('');
+            }
+        }
+        
+        // 選択日の勤務者を表示
+        function displaySelectedStaff() {
+            const container = document.getElementById('selected-staff');
+            const selectedKey = formatDate(selectedDate);
+            const staff = attendanceData[selectedKey] || [];
+            
+            if (staff.length === 0) {
+                container.innerHTML = '<div class="no-data">この日の勤務者データがありません</div>';
+            } else {
+                container.innerHTML = staff.map(name => 
+                    `<div class="staff-card">${name}</div>`
+                ).join('');
+            }
+        }
+        
+        // カレンダーを更新
+        function updateCalendar() {
+            // 月表示を更新
+            document.getElementById('calendar-month').textContent = 
+                `${currentMonth.getFullYear()}年${currentMonth.getMonth() + 1}月`;
+            
+            // カレンダーグリッドを作成
+            const calendar = document.getElementById('calendar');
+            calendar.innerHTML = '';
+            
+            // 曜日ヘッダー
+            const weekdays = ['日', '月', '火', '水', '木', '金', '土'];
+            weekdays.forEach(day => {
+                const header = document.createElement('div');
+                header.className = 'weekday-header';
+                header.textContent = day;
+                calendar.appendChild(header);
+            });
+            
+            // カレンダーの日付を生成
+            const year = currentMonth.getFullYear();
+            const month = currentMonth.getMonth();
+            const firstDay = new Date(year, month, 1);
+            const lastDay = new Date(year, month + 1, 0);
+            const startDate = new Date(firstDay);
+            startDate.setDate(startDate.getDate() - firstDay.getDay());
+            
+            const today = formatDate(new Date());
+            const selected = formatDate(selectedDate);
+            
+            // 6週間分の日付を生成
+            for (let i = 0; i < 42; i++) {
+                const date = new Date(startDate);
+                date.setDate(startDate.getDate() + i);
+                
+                const dateKey = formatDate(date);
+                const dayDiv = document.createElement('div');
+                dayDiv.className = 'calendar-day';
+                
+                // クラスを追加
+                if (date.getMonth() !== month) {
+                    dayDiv.classList.add('other-month');
+                }
+                if (dateKey === today) {
+                    dayDiv.classList.add('today');
+                }
+                if (dateKey === selected) {
+                    dayDiv.classList.add('selected');
+                }
+                
+                // 日付番号
+                const dayNumber = document.createElement('div');
+                dayNumber.className = 'calendar-day-number';
+                dayNumber.textContent = date.getDate();
+                dayDiv.appendChild(dayNumber);
+                
+                // 医師情報を表示（現在の月のみ）
+                if (date.getMonth() === month && attendanceData[dateKey]) {
+                    const staff = attendanceData[dateKey];
+                    const doctors = [];
+                    
+                    if (staff.includes('ロックン')) doctors.push('ロックン');
+                    if (staff.includes('ぽん')) doctors.push('ぽん');
+                    
+                    if (doctors.length > 0) {
+                        const doctorDiv = document.createElement('div');
+                        doctorDiv.className = 'calendar-doctors';
+                        doctorDiv.textContent = doctors.join('・');
+                        dayDiv.appendChild(doctorDiv);
+                    }
+                    
+                    // からちゃんの表示
+                    if (staff.includes('からちゃん')) {
+                        const karachanDiv = document.createElement('div');
+                        karachanDiv.className = 'calendar-staff';
+                        karachanDiv.textContent = 'からちゃん';
+                        dayDiv.appendChild(karachanDiv);
+                    }
+                    
+                    // 早渕さんの表示
+                    if (staff.includes('早渕')) {
+                        const hayabuchiDiv = document.createElement('div');
+                        hayabuchiDiv.className = 'calendar-special';
+                        hayabuchiDiv.textContent = '早渕';
+                        dayDiv.appendChild(hayabuchiDiv);
+                    }
+                }
+                
+                dayDiv.onclick = function() {
+                    if (date.getMonth() === month) {
+                        selectedDate = date;
+                        updateSelectedDate();
+                        displaySelectedStaff();
+                        updateCalendar();
+                    }
+                };
+                
+                calendar.appendChild(dayDiv);
+            }
+        }
+        
+        // 月を変更
+        function changeMonth(direction) {
+            currentMonth.setMonth(currentMonth.getMonth() + direction);
+            updateCalendar();
+        }
+    </script>
+</body>
+</html>
