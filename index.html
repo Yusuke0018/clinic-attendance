@@ -2,7 +2,7 @@
 <html lang="ja">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>クリニック勤務者確認システム</title>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.4.1/papaparse.min.js"></script>
     <style>
@@ -10,42 +10,45 @@
             margin: 0;
             padding: 0;
             box-sizing: border-box;
+            -webkit-tap-highlight-color: transparent;
         }
         
         body {
-            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Hiragino Sans', sans-serif;
             background-color: #f5f5f5;
             color: #333;
             line-height: 1.6;
+            -webkit-text-size-adjust: 100%;
         }
         
         .container {
             max-width: 1200px;
             margin: 0 auto;
-            padding: 20px;
+            padding: 10px;
         }
         
         h1 {
             text-align: center;
-            margin-bottom: 30px;
+            margin-bottom: 20px;
             color: #2c3e50;
+            font-size: 24px;
         }
         
         .section {
             background: white;
             border-radius: 10px;
-            padding: 25px;
-            margin-bottom: 20px;
+            padding: 15px;
+            margin-bottom: 15px;
             box-shadow: 0 2px 5px rgba(0,0,0,0.1);
         }
         
         .section-title {
-            font-size: 20px;
+            font-size: 18px;
             font-weight: bold;
-            margin-bottom: 15px;
+            margin-bottom: 10px;
             display: flex;
             align-items: center;
-            gap: 10px;
+            gap: 8px;
         }
         
         .today-section {
@@ -54,27 +57,31 @@
         
         .staff-grid {
             display: grid;
-            grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
-            gap: 10px;
-            margin-top: 15px;
+            grid-template-columns: repeat(auto-fill, minmax(100px, 1fr));
+            gap: 8px;
+            margin-top: 10px;
         }
         
         .staff-card {
             background: white;
-            padding: 10px 15px;
+            padding: 8px 10px;
             border-radius: 5px;
             box-shadow: 0 1px 3px rgba(0,0,0,0.1);
             text-align: center;
+            font-size: 14px;
         }
         
         .upload-button {
             background-color: #2196F3;
             color: white;
-            padding: 10px 20px;
+            padding: 12px 20px;
             border-radius: 5px;
             cursor: pointer;
             display: inline-block;
             transition: background-color 0.3s;
+            font-size: 14px;
+            width: 100%;
+            text-align: center;
         }
         
         .upload-button:hover {
@@ -86,17 +93,18 @@
         }
         
         .uploaded-files {
-            margin-top: 20px;
+            margin-top: 15px;
         }
         
         .file-item {
             display: flex;
             justify-content: space-between;
             align-items: center;
-            padding: 10px;
+            padding: 8px;
             background: #f9f9f9;
             border-radius: 5px;
-            margin-bottom: 10px;
+            margin-bottom: 8px;
+            font-size: 12px;
         }
         
         .delete-button {
@@ -106,39 +114,43 @@
             padding: 5px 10px;
             border-radius: 3px;
             cursor: pointer;
+            font-size: 12px;
         }
         
         .calendar-header {
             display: flex;
             justify-content: space-between;
             align-items: center;
-            margin-bottom: 20px;
+            margin-bottom: 15px;
         }
         
         .calendar-nav {
-            background: none;
+            background: #e0e0e0;
             border: none;
-            font-size: 24px;
+            font-size: 20px;
             cursor: pointer;
-            padding: 5px 15px;
+            padding: 8px 16px;
+            border-radius: 5px;
+            min-width: 44px;
+            min-height: 44px;
         }
         
-        .calendar-nav:hover {
-            background-color: #f0f0f0;
-            border-radius: 5px;
+        .calendar-nav:active {
+            background-color: #bdbdbd;
         }
         
         .calendar-grid {
             display: grid;
             grid-template-columns: repeat(7, 1fr);
-            gap: 5px;
+            gap: 2px;
         }
         
         .weekday-header {
             text-align: center;
             font-weight: bold;
-            padding: 10px;
-            font-size: 14px;
+            padding: 5px;
+            font-size: 12px;
+            background-color: #f5f5f5;
         }
         
         .calendar-day {
@@ -146,115 +158,163 @@
             display: flex;
             flex-direction: column;
             align-items: center;
-            justify-content: center;
+            justify-content: flex-start;
             cursor: pointer;
-            border-radius: 5px;
+            border-radius: 3px;
             position: relative;
             background: white;
             border: 1px solid #e0e0e0;
-            font-size: 16px;
             padding: 2px;
+            min-height: 50px;
+            overflow: hidden;
         }
         
         .calendar-day-number {
-            font-size: 16px;
-            line-height: 1.2;
+            font-size: 12px;
+            font-weight: bold;
+            line-height: 1;
+            margin-bottom: 1px;
         }
         
-        .calendar-doctors {
-            font-size: 9px;
+        .calendar-names {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            width: 100%;
+            font-size: 7px;
+            line-height: 1;
+            gap: 1px;
+        }
+        
+        .calendar-doctor {
             color: #d32f2f;
             font-weight: bold;
-            text-align: center;
-            margin-top: 2px;
-            line-height: 1.1;
-            word-break: break-all;
         }
         
         .calendar-staff {
-            font-size: 9px;
             color: #1976d2;
             font-weight: bold;
-            text-align: center;
-            line-height: 1.1;
-            word-break: break-all;
         }
         
         .calendar-special {
-            font-size: 9px;
             color: #388e3c;
             font-weight: bold;
-            text-align: center;
-            line-height: 1.1;
-            word-break: break-all;
         }
         
-        .calendar-day:hover {
-            background-color: #f0f0f0;
+        .calendar-day:active {
+            background-color: #e3f2fd;
         }
         
         .calendar-day.other-month {
             color: #ccc;
+            background-color: #fafafa;
         }
         
         .calendar-day.today {
             background-color: #bbdefb;
-            font-weight: bold;
+            border-color: #2196F3;
+            border-width: 2px;
         }
         
         .calendar-day.selected {
             border: 2px solid #2196F3;
-        }
-        
-        .calendar-day.has-staff::after {
-            content: '';
-            position: absolute;
-            bottom: 5px;
-            left: 50%;
-            transform: translateX(-50%);
-            width: 6px;
-            height: 6px;
-            background-color: #2196F3;
-            border-radius: 50%;
+            background-color: #e3f2fd;
         }
         
         .no-data {
             color: #999;
             text-align: center;
             padding: 20px;
+            font-size: 14px;
         }
         
-        @media (max-width: 768px) {
+        /* スマホ専用の調整 */
+        @media (max-width: 480px) {
             .container {
-                padding: 10px;
+                padding: 8px;
+            }
+            
+            h1 {
+                font-size: 20px;
+                margin-bottom: 15px;
             }
             
             .section {
-                padding: 15px;
+                padding: 12px;
+                margin-bottom: 12px;
+            }
+            
+            .section-title {
+                font-size: 16px;
             }
             
             .staff-grid {
-                grid-template-columns: repeat(auto-fill, minmax(120px, 1fr));
+                grid-template-columns: repeat(3, 1fr);
+                gap: 6px;
+            }
+            
+            .staff-card {
+                font-size: 12px;
+                padding: 6px 8px;
+            }
+            
+            .calendar-grid {
+                gap: 1px;
+            }
+            
+            .weekday-header {
+                font-size: 11px;
+                padding: 4px 0;
             }
             
             .calendar-day {
-                font-size: 14px;
+                min-height: 45px;
+                padding: 1px;
             }
             
             .calendar-day-number {
-                font-size: 14px;
+                font-size: 11px;
             }
             
-            .calendar-doctors {
-                font-size: 8px;
+            .calendar-names {
+                font-size: 6px;
             }
             
-            .calendar-staff {
-                font-size: 8px;
+            /* 月表示のフォントサイズ調整 */
+            #calendar-month {
+                font-size: 16px;
+            }
+        }
+        
+        /* タブレット用の調整 */
+        @media (min-width: 481px) and (max-width: 768px) {
+            .staff-grid {
+                grid-template-columns: repeat(4, 1fr);
             }
             
-            .calendar-special {
+            .calendar-day {
+                min-height: 60px;
+            }
+            
+            .calendar-names {
                 font-size: 8px;
+            }
+        }
+        
+        /* 横向き対応 */
+        @media (orientation: landscape) and (max-height: 500px) {
+            h1 {
+                margin-bottom: 10px;
+                font-size: 20px;
+            }
+            
+            .section {
+                padding: 10px;
+                margin-bottom: 10px;
+            }
+            
+            .calendar-day {
+                min-height: 40px;
             }
         }
     </style>
@@ -504,7 +564,7 @@
                 return;
             }
             
-            container.innerHTML = '<h4 style="margin-top: 20px; margin-bottom: 10px;">アップロード済みファイル:</h4>';
+            container.innerHTML = '<h4 style="margin-top: 15px; margin-bottom: 10px; font-size: 14px;">アップロード済みファイル:</h4>';
             uploadedFiles.forEach(file => {
                 const fileDiv = document.createElement('div');
                 fileDiv.className = 'file-item';
@@ -602,36 +662,41 @@
                 dayNumber.textContent = date.getDate();
                 dayDiv.appendChild(dayNumber);
                 
-                // 医師情報を表示（現在の月のみ）
+                // スタッフ情報を表示（現在の月のみ）
                 if (date.getMonth() === month && attendanceData[dateKey]) {
                     const staff = attendanceData[dateKey];
-                    const doctors = [];
+                    const namesDiv = document.createElement('div');
+                    namesDiv.className = 'calendar-names';
                     
-                    if (staff.includes('ロックン')) doctors.push('ロックン');
-                    if (staff.includes('ぽん')) doctors.push('ぽん');
+                    // 医師をまとめて表示
+                    const doctors = [];
+                    if (staff.includes('ロックン')) doctors.push('ロ');
+                    if (staff.includes('ぽん')) doctors.push('ぽ');
                     
                     if (doctors.length > 0) {
                         const doctorDiv = document.createElement('div');
-                        doctorDiv.className = 'calendar-doctors';
+                        doctorDiv.className = 'calendar-doctor';
                         doctorDiv.textContent = doctors.join('・');
-                        dayDiv.appendChild(doctorDiv);
+                        namesDiv.appendChild(doctorDiv);
                     }
                     
-                    // からちゃんの表示
+                    // からちゃんの表示（省略形）
                     if (staff.includes('からちゃん')) {
                         const karachanDiv = document.createElement('div');
                         karachanDiv.className = 'calendar-staff';
-                        karachanDiv.textContent = 'からちゃん';
-                        dayDiv.appendChild(karachanDiv);
+                        karachanDiv.textContent = 'から';
+                        namesDiv.appendChild(karachanDiv);
                     }
                     
-                    // 早渕さんの表示
+                    // 早渕さんの表示（省略形）
                     if (staff.includes('早渕')) {
                         const hayabuchiDiv = document.createElement('div');
                         hayabuchiDiv.className = 'calendar-special';
-                        hayabuchiDiv.textContent = '早渕';
-                        dayDiv.appendChild(hayabuchiDiv);
+                        hayabuchiDiv.textContent = '早';
+                        namesDiv.appendChild(hayabuchiDiv);
                     }
+                    
+                    dayDiv.appendChild(namesDiv);
                 }
                 
                 dayDiv.onclick = function() {
