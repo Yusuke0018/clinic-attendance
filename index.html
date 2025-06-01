@@ -228,6 +228,74 @@
             font-size: 14px;
         }
         
+        /* 検索機能のスタイル */
+        .search-container {
+            display: flex;
+            gap: 8px;
+            margin-bottom: 15px;
+            flex-wrap: wrap;
+        }
+        
+        .staff-select {
+            flex: 1;
+            min-width: 150px;
+            padding: 10px;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+            font-size: 14px;
+            background-color: white;
+            cursor: pointer;
+        }
+        
+        .search-button, .clear-button {
+            padding: 10px 16px;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 14px;
+            font-weight: bold;
+            transition: background-color 0.3s;
+        }
+        
+        .search-button {
+            background-color: #4CAF50;
+            color: white;
+        }
+        
+        .search-button:hover {
+            background-color: #45a049;
+        }
+        
+        .clear-button {
+            background-color: #f44336;
+            color: white;
+        }
+        
+        .clear-button:hover {
+            background-color: #da190b;
+        }
+        
+        .search-result {
+            margin-bottom: 10px;
+            padding: 10px;
+            background-color: #fff3cd;
+            border-radius: 5px;
+            font-size: 14px;
+            display: none;
+        }
+        
+        .calendar-day.search-highlight {
+            background-color: #ffeb3b !important;
+            border-color: #f9a825 !important;
+            animation: pulse 1s infinite;
+        }
+        
+        @keyframes pulse {
+            0% { transform: scale(1); }
+            50% { transform: scale(1.05); }
+            100% { transform: scale(1); }
+        }
+        
         /* スマホ専用の調整 */
         @media (max-width: 480px) {
             .container {
@@ -283,6 +351,20 @@
             /* 月表示のフォントサイズ調整 */
             #calendar-month {
                 font-size: 16px;
+            }
+            
+            /* 検索ボックスのスマホ対応 */
+            .search-container {
+                flex-direction: column;
+            }
+            
+            .staff-select {
+                width: 100%;
+                min-width: auto;
+            }
+            
+            .search-button, .clear-button {
+                width: 100%;
             }
         }
         
@@ -348,6 +430,17 @@
                 <h3 id="calendar-month"></h3>
                 <button class="calendar-nav" onclick="changeMonth(1)">▶</button>
             </div>
+            
+            <!-- 検索機能 -->
+            <div class="search-container">
+                <select id="staff-select" class="staff-select">
+                    <option value="">スタッフを選択...</option>
+                </select>
+                <button id="search-button" class="search-button" onclick="searchStaff()">🔍 表示</button>
+                <button id="clear-button" class="clear-button" onclick="clearSearch()" style="display: none;">✕ クリア</button>
+            </div>
+            <div id="search-result" class="search-result"></div>
+            
             <div class="calendar-grid" id="calendar"></div>
         </div>
         
@@ -367,6 +460,7 @@
         let currentMonth = new Date();
         let uploadedFiles = [];
         let useLocalStorage = true;
+        let searchQuery = ''; // 検索クエリを保持
         
         // ローカルストレージが使用可能かチェック
         function checkLocalStorage() {
@@ -414,6 +508,7 @@
             displayTodayStaff();
             displaySelectedStaff();
             displayUploadedFiles();
+            updateStaffList();
             
             // ファイルアップロードのイベントリスナー
             document.getElementById('csv-upload').addEventListener('change', handleFileUpload);
@@ -524,6 +619,7 @@
                     displaySelectedStaff();
                     displayUploadedFiles();
                     updateCalendar();
+                    updateStaffList();
                     
                     alert('ファイルのアップロードが完了しました！');
                 } catch(error) {
@@ -656,6 +752,14 @@
                     dayDiv.classList.add('selected');
                 }
                 
+                // 検索結果のハイライト
+                if (searchQuery && date.getMonth() === month) {
+                    const staff = attendanceData[dateKey] || [];
+                    if (staff.includes(searchQuery)) {
+                        dayDiv.classList.add('search-highlight');
+                    }
+                }
+                
                 // 日付番号
                 const dayNumber = document.createElement('div');
                 dayNumber.className = 'calendar-day-number';
@@ -716,6 +820,87 @@
         function changeMonth(direction) {
             currentMonth.setMonth(currentMonth.getMonth() + direction);
             updateCalendar();
+        }
+        
+        // スタッフ検索機能
+        function searchStaff() {
+            const staffSelect = document.getElementById('staff-select');
+            searchQuery = staffSelect.value;
+            
+            if (!searchQuery) {
+                alert('検索するスタッフを選択してください');
+                return;
+            }
+            
+            // 検索結果をカウント
+            let foundCount = 0;
+            const year = currentMonth.getFullYear();
+            const month = currentMonth.getMonth();
+            
+            for (let day = 1; day <= 31; day++) {
+                const date = new Date(year, month, day);
+                const dateKey = formatDate(date);
+                const staff = attendanceData[dateKey] || [];
+                
+                if (staff.includes(searchQuery)) {
+                    foundCount++;
+                }
+            }
+            
+            // 検索結果を表示
+            const searchResult = document.getElementById('search-result');
+            const clearButton = document.getElementById('clear-button');
+            
+            if (foundCount > 0) {
+                searchResult.textContent = `「${searchQuery}」さんの勤務日: ${foundCount}日見つかりました`;
+                searchResult.style.display = 'block';
+                clearButton.style.display = 'inline-block';
+            } else {
+                searchResult.textContent = `「${searchQuery}」さんの勤務日は見つかりませんでした`;
+                searchResult.style.display = 'block';
+                clearButton.style.display = 'inline-block';
+            }
+            
+            // カレンダーを更新して検索結果をハイライト
+            updateCalendar();
+        }
+        
+        // 検索をクリア
+        function clearSearch() {
+            searchQuery = '';
+            document.getElementById('staff-select').value = '';
+            document.getElementById('search-result').style.display = 'none';
+            document.getElementById('clear-button').style.display = 'none';
+            updateCalendar();
+        }
+        
+        // スタッフリストを更新
+        function updateStaffList() {
+            const staffSet = new Set();
+            
+            // 全データからスタッフ名を収集
+            Object.values(attendanceData).forEach(dayStaff => {
+                dayStaff.forEach(name => {
+                    staffSet.add(name);
+                });
+            });
+            
+            // セレクトボックスを更新
+            const staffSelect = document.getElementById('staff-select');
+            staffSelect.innerHTML = '<option value="">スタッフを選択...</option>';
+            
+            // スタッフ名をソートして追加
+            const sortedStaff = Array.from(staffSet).sort();
+            sortedStaff.forEach(name => {
+                const option = document.createElement('option');
+                option.value = name;
+                option.textContent = name;
+                staffSelect.appendChild(option);
+            });
+        }
+    </script>
+</body>
+</html>
         }
     </script>
 </body>
