@@ -95,6 +95,15 @@
         .file-input {
             display: none;
         }
+
+        .encoding-options {
+            margin-top: 15px;
+            font-size: 14px;
+        }
+        .encoding-options label {
+            margin-right: 15px;
+            cursor: pointer;
+        }
         
         .uploaded-files {
             margin-top: 15px;
@@ -360,7 +369,16 @@
         <!-- データ管理 -->
         <div class="section">
             <h3 class="section-title">📁 データ管理</h3>
-            <label class="upload-button">
+            
+            <!-- 【追加】文字コード選択 -->
+            <div class="encoding-options">
+                <strong>文字コードを選択:</strong>
+                <label for="enc-sjis"><input type="radio" id="enc-sjis" name="encoding" value="Shift_JIS" checked> Shift_JIS</label>
+                <label for="enc-utf8"><input type="radio" id="enc-utf8" name="encoding" value="UTF-8"> UTF-8</label>
+                <label for="enc-auto"><input type="radio" id="enc-auto" name="encoding" value=""> 自動判別</label>
+            </div>
+
+            <label class="upload-button" style="margin-top: 10px;">
                 <input type="file" class="file-input" id="csv-upload" accept=".csv">
                 📤 CSVファイルをアップロード
             </label>
@@ -506,16 +524,8 @@
             document.getElementById('selected-date').textContent = formatDateJP(selectedDate);
         }
         
-        // CSVパース関数
-        function parseAttendanceCSV(csvContent, fileName) {
-            const parsed = Papa.parse(csvContent, {
-                header: false,
-                dynamicTyping: true,
-                skipEmptyLines: false
-            });
-            
-            const data = parsed.data;
-            
+        // CSVのパースされたデータを処理する関数
+        function processAttendanceData(data, fileName) {
             // ファイル名から年月を推測 (例: "勤務表.2025.5.csv")
             let year, month;
             const match = fileName.match(/(\d{4})[^0-9]+(\d{1,2})/);
@@ -549,13 +559,17 @@
                     // 数字の場合のみ勤務とみなす
                     if (typeof cellValue === 'number' && cellValue > 0) {
                         try {
-                            const dateKey = `${year}-${String(month).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
-                            if (!monthData[dateKey]) {
-                                monthData[dateKey] = [];
+                            // 日付の妥当性チェック
+                            const d = new Date(year, month - 1, day);
+                            if (d.getFullYear() === year && d.getMonth() === month - 1 && d.getDate() === day) {
+                                const dateKey = formatDate(d);
+                                if (!monthData[dateKey]) {
+                                    monthData[dateKey] = [];
+                                }
+                                monthData[dateKey].push(staffName);
                             }
-                            monthData[dateKey].push(staffName);
                         } catch (e) {
-                            // 日付が無効な場合はスキップ (例: 2月30日)
+                            // 無視
                         }
                     }
                 }
@@ -563,44 +577,66 @@
             return monthData;
         }
         
-        // ファイルアップロード処理
+        // 【修正】ファイルアップロード処理
         function handleFileUpload(event) {
             const file = event.target.files[0];
             if (!file) return;
             
-            const reader = new FileReader();
-            reader.onload = function(e) {
-                try {
-                    const content = e.target.result;
-                    const newData = parseAttendanceCSV(content, file.name);
+            // 選択された文字コードを取得
+            const selectedEncoding = document.querySelector('input[name="encoding"]:checked').value;
+
+            // PapaParseで直接ファイルを解析
+            Papa.parse(file, {
+                encoding: selectedEncoding,
+                dynamicTyping: true,
+                skipEmptyLines: false,
+                complete: function(results) {
+                    // エラーチェック
+                    if (results.errors.length > 0) {
+                        console.error("PapaParse Errors:", results.errors);
+                        // 文字化けが原因でパースエラーが起きている可能性を示唆
+                        showCustomAlert('CSVファイルの解析中にエラーが発生しました。文字コードの選択が正しいか確認してください。');
+                        return;
+                    }
+                    if (!results.data || results.data.length === 0) {
+                        showCustomAlert('CSVファイルが空か、読み込めませんでした。');
+                        return;
+                    }
                     
-                    // 既存データとマージ
-                    attendanceData = { ...attendanceData, ...newData };
-                    
-                    // アップロードファイルリストに追加
-                    const newFileInfo = {
-                        name: file.name,
-                        uploadDate: new Date().toISOString(),
-                        id: Date.now() // ユニークIDとしてタイムスタンプを使用
-                    };
-                    uploadedFiles.push(newFileInfo);
-                    
-                    saveData();
-                    
-                    // UIを全体的に更新
-                    displayTodayStaff();
-                    displaySelectedStaff();
-                    displayUploadedFiles();
-                    updateCalendar();
-                    updateStaffList();
-                    
-                    showCustomAlert('ファイルのアップロードが完了しました！');
-                } catch(error) {
-                    console.error('Error processing file:', error);
-                    showCustomAlert('ファイルの処理中にエラーが発生しました。CSVファイルの形式を確認してください。');
+                    try {
+                        const newData = processAttendanceData(results.data, file.name);
+                        
+                        // 既存データとマージ
+                        attendanceData = { ...attendanceData, ...newData };
+                        
+                        // アップロードファイルリストに追加
+                        const newFileInfo = {
+                            name: file.name,
+                            uploadDate: new Date().toISOString(),
+                            id: Date.now() // ユニークIDとしてタイムスタンプを使用
+                        };
+                        uploadedFiles.push(newFileInfo);
+                        
+                        saveData();
+                        
+                        // UIを全体的に更新
+                        displayTodayStaff();
+                        displaySelectedStaff();
+                        displayUploadedFiles();
+                        updateCalendar();
+                        updateStaffList();
+                        
+                        showCustomAlert('ファイルのアップロードが完了しました！');
+                    } catch(error) {
+                        console.error('Error processing file:', error);
+                        showCustomAlert('ファイルの処理中にエラーが発生しました。CSVファイルの形式を確認してください。');
+                    }
+                },
+                error: function(err) {
+                    console.error("PapaParse File Read Error:", err);
+                    showCustomAlert('CSVファイルの読み込みに失敗しました。ファイルが破損していないか、文字コードの選択が正しいか確認してください。');
                 }
-            };
-            reader.readAsText(file, 'Shift_JIS'); // 文字コードをShift_JISに指定
+            });
             
             // ファイル選択をリセットして同じファイルを連続でアップロード可能にする
             event.target.value = '';
@@ -703,7 +739,6 @@
             const year = currentMonth.getFullYear();
             const month = currentMonth.getMonth();
             const firstDayOfMonth = new Date(year, month, 1);
-            const lastDayOfMonth = new Date(year, month + 1, 0);
             
             // カレンダーの開始日 (月初の日が日曜でなければ、前の月の日付で埋める)
             const startDate = new Date(firstDayOfMonth);
@@ -861,11 +896,6 @@
             if(sortedStaff.includes(currentSelection)){
                 staffSelect.value = currentSelection;
             }
-        }
-    </script>
-</body>
-</html>
-
         }
     </script>
 </body>
