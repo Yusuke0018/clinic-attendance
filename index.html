@@ -417,6 +417,7 @@
             <div class="search-container">
                 <select id="staff-select" class="staff-select">
                     <option value="">スタッフを選択...</option>
+                    <!-- 「掃除イレギュラー」オプションはJSで動的に追加 -->
                 </select>
                 <button id="search-button" class="search-button" onclick="searchStaff()">🔍 表示</button>
                 <button id="clear-button" class="clear-button" onclick="clearSearch()" style="display: none;">✕ クリア</button>
@@ -677,15 +678,9 @@
         
         // ファイル削除
         function removeFile(fileId) {
-            // 注意: この関数は現在、ファイルリストから情報を削除するだけで、
-            // そのファイルから読み込んだデータを`attendanceData`から削除しません。
-            // 正確にデータを削除するには、どのデータがどのファイル由来かを管理する必要があります。
-            // 今回はリストからの削除のみを実装します。
             uploadedFiles = uploadedFiles.filter(f => f.id !== fileId);
             saveData();
             displayUploadedFiles();
-            // ここで本来はデータの再構築が必要
-            // showCustomAlert('ファイルリストから削除しました。関連する勤務データはリロードするまですべて残ります。');
         }
         
         // アップロード済みファイルを表示
@@ -760,7 +755,6 @@
             const month = currentMonth.getMonth();
             const firstDayOfMonth = new Date(year, month, 1);
             
-            // カレンダーの開始日 (月初の日が日曜でなければ、前の月の日付で埋める)
             const startDate = new Date(firstDayOfMonth);
             startDate.setDate(startDate.getDate() - firstDayOfMonth.getDay());
             
@@ -783,11 +777,28 @@
                 if (date.getTime() === today.getTime()) dayDiv.classList.add('today');
                 if (date.getTime() === selected.getTime()) dayDiv.classList.add('selected');
                 
-                // 検索ハイライト
+                // 【変更】検索ハイライトロジック
                 if (searchQuery && date.getMonth() === month) {
-                    const staffOnDay = attendanceData[dateKey] || [];
-                    if (staffOnDay.includes(searchQuery)) {
-                        dayDiv.classList.add('search-highlight');
+                    if (searchQuery === 'irregular-cleaning') {
+                        // "掃除イレギュラー" の条件チェック
+                        const dayOfWeek = date.getDay();
+                        // 条件1: 平日の火曜日～金曜日
+                        if (dayOfWeek >= 2 && dayOfWeek <= 5) {
+                            // 条件2: ぽんがいない次の日
+                            const prevDate = new Date(date);
+                            prevDate.setDate(date.getDate() - 1);
+                            const prevDateKey = formatDate(prevDate);
+                            const staffOnPrevDay = attendanceData[prevDateKey] || [];
+                            if (!staffOnPrevDay.includes('ぽん')) {
+                                dayDiv.classList.add('search-highlight');
+                            }
+                        }
+                    } else {
+                        // 通常のスタッフ検索
+                        const staffOnDay = attendanceData[dateKey] || [];
+                        if (staffOnDay.includes(searchQuery)) {
+                            dayDiv.classList.add('search-highlight');
+                        }
                     }
                 }
                 
@@ -847,13 +858,13 @@
             updateCalendar();
         }
         
-        // スタッフ検索
+        // 【変更】スタッフ検索
         function searchStaff() {
             const staffSelect = document.getElementById('staff-select');
             searchQuery = staffSelect.value;
             
             if (!searchQuery) {
-                showCustomAlert('検索するスタッフを選択してください');
+                showCustomAlert('検索するスタッフまたは項目を選択してください。');
                 return;
             }
             
@@ -863,11 +874,29 @@
             const month = currentMonth.getMonth();
             const daysInMonth = new Date(year, month + 1, 0).getDate();
             
-            for (let day = 1; day <= daysInMonth; day++) {
-                const dateKey = `${year}-${String(month + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
-                const staff = attendanceData[dateKey] || [];
-                if (staff.includes(searchQuery)) {
-                    foundCount++;
+            // "掃除イレギュラー"のカウント処理
+            if (searchQuery === 'irregular-cleaning') {
+                for (let day = 1; day <= daysInMonth; day++) {
+                    const date = new Date(year, month, day);
+                    const dayOfWeek = date.getDay();
+                    if (dayOfWeek >= 2 && dayOfWeek <= 5) { // Tue-Fri
+                        const prevDate = new Date(date);
+                        prevDate.setDate(date.getDate() - 1);
+                        const prevDateKey = formatDate(prevDate);
+                        const staffOnPrevDay = attendanceData[prevDateKey] || [];
+                        if (!staffOnPrevDay.includes('ぽん')) {
+                            foundCount++;
+                        }
+                    }
+                }
+            } else {
+                // 通常スタッフのカウント処理
+                for (let day = 1; day <= daysInMonth; day++) {
+                    const dateKey = `${year}-${String(month + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
+                    const staff = attendanceData[dateKey] || [];
+                    if (staff.includes(searchQuery)) {
+                        foundCount++;
+                    }
                 }
             }
             
@@ -875,7 +904,8 @@
             const searchResult = document.getElementById('search-result');
             const clearButton = document.getElementById('clear-button');
             
-            searchResult.textContent = `「${searchQuery}」さんの今月の勤務日: ${foundCount}日`;
+            const displayName = searchQuery === 'irregular-cleaning' ? '掃除イレギュラー' : `「${searchQuery}」さん`;
+            searchResult.textContent = `${displayName}の今月の該当日は ${foundCount}日 です`;
             searchResult.style.display = 'block';
             clearButton.style.display = 'inline-block';
             
@@ -891,7 +921,7 @@
             updateCalendar();
         }
         
-        // スタッフリストを更新
+        // 【変更】スタッフリストを更新
         function updateStaffList() {
             const staffSet = new Set();
             
@@ -900,10 +930,16 @@
             });
             
             const staffSelect = document.getElementById('staff-select');
-            // 現在の選択値を保持
             const currentSelection = staffSelect.value;
             staffSelect.innerHTML = '<option value="">スタッフを選択...</option>';
             
+            // 「掃除イレギュラー」オプションをリストの先頭に追加
+            const irregularOption = document.createElement('option');
+            irregularOption.value = 'irregular-cleaning';
+            irregularOption.textContent = '掃除イレギュラー';
+            staffSelect.appendChild(irregularOption);
+            
+            // スタッフ名をソートして追加
             const sortedStaff = Array.from(staffSet).sort((a, b) => a.localeCompare(b, 'ja'));
             sortedStaff.forEach(name => {
                 const option = document.createElement('option');
@@ -912,10 +948,8 @@
                 staffSelect.appendChild(option);
             });
 
-            // 選択値を復元
-            if(sortedStaff.includes(currentSelection)){
-                staffSelect.value = currentSelection;
-            }
+            // 以前の選択を復元
+            staffSelect.value = currentSelection;
         }
     </script>
 </body>
