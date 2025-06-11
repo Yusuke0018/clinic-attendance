@@ -195,7 +195,7 @@
             flex-direction: column;
             align-items: center;
             width: 100%;
-            font-size: 7px;
+            font-size: 7px; /* Default small size */
             line-height: 1;
             gap: 1px;
         }
@@ -324,6 +324,7 @@
         }
         
         /* レスポンシブ対応 */
+        /* スマホ向け */
         @media (max-width: 480px) {
             .container { padding: 8px; }
             h1 { font-size: 20px; margin-bottom: 15px; }
@@ -341,10 +342,29 @@
             .staff-select, .search-button, .clear-button { width: 100%; min-width: auto; }
         }
         
+        /* タブレット向け */
         @media (min-width: 481px) and (max-width: 768px) {
             .staff-grid { grid-template-columns: repeat(4, 1fr); }
             .calendar-day { min-height: 60px; }
             .calendar-names { font-size: 8px; }
+        }
+        
+        /* 【追加】デスクトップ向け */
+        @media (min-width: 769px) {
+            .calendar-day {
+                min-height: 100px; /* 十分な高さを確保 */
+                padding: 4px;
+                aspect-ratio: auto; /* アスペクト比を自動に */
+            }
+            .calendar-day-number {
+                font-size: 14px; /* 日付の数字を大きく */
+                margin-bottom: 4px;
+            }
+            .calendar-names {
+                font-size: 12px; /* ★名前のフォントを大幅に拡大 */
+                gap: 2px;
+                line-height: 1.2;
+            }
         }
         
         @media (orientation: landscape) and (max-height: 500px) {
