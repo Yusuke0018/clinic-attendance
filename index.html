@@ -349,7 +349,7 @@
             .calendar-names { font-size: 8px; }
         }
         
-        /* 【追加】デスクトップ向け */
+        /* デスクトップ向け */
         @media (min-width: 769px) {
             .calendar-day {
                 min-height: 100px; /* 十分な高さを確保 */
@@ -390,7 +390,6 @@
         <div class="section">
             <h3 class="section-title">📁 データ管理</h3>
             
-            <!-- 【追加】文字コード選択 -->
             <div class="encoding-options">
                 <strong>文字コードを選択:</strong>
                 <label for="enc-sjis"><input type="radio" id="enc-sjis" name="encoding" value="Shift_JIS" checked> Shift_JIS</label>
@@ -419,7 +418,8 @@
                     <option value="">スタッフを選択...</option>
                     <!-- 「掃除イレギュラー」オプションはJSで動的に追加 -->
                 </select>
-                <button id="search-button" class="search-button" onclick="searchStaff()">🔍 表示</button>
+                <!-- ▼▼▼ 変更点: 表示ボタンは不要なため非表示に ▼▼▼ -->
+                <button id="search-button" class="search-button" style="display: none;">🔍 表示</button>
                 <button id="clear-button" class="clear-button" onclick="clearSearch()" style="display: none;">✕ クリア</button>
             </div>
             <div id="search-result" class="search-result"></div>
@@ -511,8 +511,10 @@
             displayUploadedFiles();
             updateStaffList();
             
-            // イベントリスナー設定
+            // ▼▼▼ 変更点: イベントリスナー設定 ▼▼▼
             document.getElementById('csv-upload').addEventListener('change', handleFileUpload);
+            // ドロップダウンの選択が変更されたらsearchStaff関数を呼び出す
+            document.getElementById('staff-select').addEventListener('change', searchStaff);
             document.getElementById('custom-alert-close').addEventListener('click', () => {
                 document.getElementById('custom-alert').style.display = 'none';
             });
@@ -598,24 +600,20 @@
             return monthData;
         }
         
-        // 【修正】ファイルアップロード処理
+        // ファイルアップロード処理
         function handleFileUpload(event) {
             const file = event.target.files[0];
             if (!file) return;
             
-            // 選択された文字コードを取得
             const selectedEncoding = document.querySelector('input[name="encoding"]:checked').value;
 
-            // PapaParseで直接ファイルを解析
             Papa.parse(file, {
                 encoding: selectedEncoding,
                 dynamicTyping: true,
                 skipEmptyLines: false,
                 complete: function(results) {
-                    // エラーチェック
                     if (results.errors.length > 0) {
                         console.error("PapaParse Errors:", results.errors);
-                        // 文字化けが原因でパースエラーが起きている可能性を示唆
                         showCustomAlert('CSVファイルの解析中にエラーが発生しました。文字コードの選択が正しいか確認してください。');
                         return;
                     }
@@ -630,11 +628,10 @@
                         // 既存データとマージ
                         attendanceData = { ...attendanceData, ...newData };
                         
-                        // アップロードファイルリストに追加
                         const newFileInfo = {
                             name: file.name,
                             uploadDate: new Date().toISOString(),
-                            id: Date.now() // ユニークIDとしてタイムスタンプを使用
+                            id: Date.now()
                         };
                         uploadedFiles.push(newFileInfo);
                         
@@ -659,7 +656,6 @@
                 }
             });
             
-            // ファイル選択をリセットして同じファイルを連続でアップロード可能にする
             event.target.value = '';
         }
         
@@ -686,7 +682,7 @@
         // アップロード済みファイルを表示
         function displayUploadedFiles() {
             const container = document.getElementById('uploaded-files');
-            container.innerHTML = ''; // コンテナをクリア
+            container.innerHTML = '';
             if (uploadedFiles.length === 0) {
                 return;
             }
@@ -737,9 +733,8 @@
             calendarMonth.textContent = `${currentMonth.getFullYear()}年${currentMonth.getMonth() + 1}月`;
             
             const calendar = document.getElementById('calendar');
-            calendar.innerHTML = ''; // グリッドをクリア
+            calendar.innerHTML = '';
             
-            // 曜日ヘッダー
             const weekdays = ['日', '月', '火', '水', '木', '金', '土'];
             weekdays.forEach(day => {
                 const header = document.createElement('div');
@@ -750,7 +745,6 @@
                 calendar.appendChild(header);
             });
             
-            // 日付生成ロジック
             const year = currentMonth.getFullYear();
             const month = currentMonth.getMonth();
             const firstDayOfMonth = new Date(year, month, 1);
@@ -763,7 +757,6 @@
             const selected = new Date(selectedDate);
             selected.setHours(0,0,0,0);
 
-            // 6週間 (42日) 分の日付セルを生成
             for (let i = 0; i < 42; i++) {
                 const date = new Date(startDate);
                 date.setDate(startDate.getDate() + i);
@@ -772,19 +765,14 @@
                 const dayDiv = document.createElement('div');
                 dayDiv.className = 'calendar-day';
                 
-                // クラス設定
                 if (date.getMonth() !== month) dayDiv.classList.add('other-month');
                 if (date.getTime() === today.getTime()) dayDiv.classList.add('today');
                 if (date.getTime() === selected.getTime()) dayDiv.classList.add('selected');
                 
-                // 【変更】検索ハイライトロジック
                 if (searchQuery && date.getMonth() === month) {
                     if (searchQuery === 'irregular-cleaning') {
-                        // "掃除イレギュラー" の条件チェック
                         const dayOfWeek = date.getDay();
-                        // 条件1: 平日の火曜日～金曜日
                         if (dayOfWeek >= 2 && dayOfWeek <= 5) {
-                            // 条件2: ぽんがいない次の日
                             const prevDate = new Date(date);
                             prevDate.setDate(date.getDate() - 1);
                             const prevDateKey = formatDate(prevDate);
@@ -794,7 +782,6 @@
                             }
                         }
                     } else {
-                        // 通常のスタッフ検索
                         const staffOnDay = attendanceData[dateKey] || [];
                         if (staffOnDay.includes(searchQuery)) {
                             dayDiv.classList.add('search-highlight');
@@ -802,13 +789,11 @@
                     }
                 }
                 
-                // 日付番号
                 const dayNumber = document.createElement('div');
                 dayNumber.className = 'calendar-day-number';
                 dayNumber.textContent = date.getDate();
                 dayDiv.appendChild(dayNumber);
                 
-                // スタッフ情報表示
                 if (date.getMonth() === month && attendanceData[dateKey]) {
                     const staff = attendanceData[dateKey];
                     const namesDiv = document.createElement('div');
@@ -844,7 +829,7 @@
                         selectedDate = date;
                         updateSelectedDate();
                         displaySelectedStaff();
-                        updateCalendar(); // カレンダーを再描画して選択日を更新
+                        updateCalendar();
                     }
                 };
                 
@@ -858,23 +843,22 @@
             updateCalendar();
         }
         
-        // 【変更】スタッフ検索
+        // ▼▼▼ 変更点: スタッフ検索関数 ▼▼▼
         function searchStaff() {
             const staffSelect = document.getElementById('staff-select');
             searchQuery = staffSelect.value;
             
+            // プレースホルダー（「スタッフを選択...」）が選ばれたら、検索をクリアして終了
             if (!searchQuery) {
-                showCustomAlert('検索するスタッフまたは項目を選択してください。');
+                clearSearch();
                 return;
             }
             
-            // 検索結果カウント
             let foundCount = 0;
             const year = currentMonth.getFullYear();
             const month = currentMonth.getMonth();
             const daysInMonth = new Date(year, month + 1, 0).getDate();
             
-            // "掃除イレギュラー"のカウント処理
             if (searchQuery === 'irregular-cleaning') {
                 for (let day = 1; day <= daysInMonth; day++) {
                     const date = new Date(year, month, day);
@@ -890,7 +874,6 @@
                     }
                 }
             } else {
-                // 通常スタッフのカウント処理
                 for (let day = 1; day <= daysInMonth; day++) {
                     const dateKey = `${year}-${String(month + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
                     const staff = attendanceData[dateKey] || [];
@@ -900,7 +883,6 @@
                 }
             }
             
-            // 結果表示
             const searchResult = document.getElementById('search-result');
             const clearButton = document.getElementById('clear-button');
             
@@ -921,7 +903,7 @@
             updateCalendar();
         }
         
-        // 【変更】スタッフリストを更新
+        // スタッフリストを更新
         function updateStaffList() {
             const staffSet = new Set();
             
@@ -933,13 +915,11 @@
             const currentSelection = staffSelect.value;
             staffSelect.innerHTML = '<option value="">スタッフを選択...</option>';
             
-            // 「掃除イレギュラー」オプションをリストの先頭に追加
             const irregularOption = document.createElement('option');
             irregularOption.value = 'irregular-cleaning';
             irregularOption.textContent = '掃除イレギュラー';
             staffSelect.appendChild(irregularOption);
             
-            // スタッフ名をソートして追加
             const sortedStaff = Array.from(staffSet).sort((a, b) => a.localeCompare(b, 'ja'));
             sortedStaff.forEach(name => {
                 const option = document.createElement('option');
@@ -948,7 +928,6 @@
                 staffSelect.appendChild(option);
             });
 
-            // 以前の選択を復元
             staffSelect.value = currentSelection;
         }
     </script>
