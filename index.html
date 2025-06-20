@@ -96,14 +96,6 @@
             display: none;
         }
 
-        .encoding-options {
-            margin-top: 15px;
-            font-size: 14px;
-        }
-        .encoding-options label {
-            margin-right: 15px;
-            cursor: pointer;
-        }
         
         .uploaded-files {
             margin-top: 15px;
@@ -390,12 +382,6 @@
         <div class="section">
             <h3 class="section-title">📁 データ管理</h3>
             
-            <div class="encoding-options">
-                <strong>文字コードを選択:</strong>
-                <label for="enc-sjis"><input type="radio" id="enc-sjis" name="encoding" value="Shift_JIS" checked> Shift_JIS</label>
-                <label for="enc-utf8"><input type="radio" id="enc-utf8" name="encoding" value="UTF-8"> UTF-8</label>
-                <label for="enc-auto"><input type="radio" id="enc-auto" name="encoding" value=""> 自動判別</label>
-            </div>
 
             <label class="upload-button" style="margin-top: 10px;">
                 <input type="file" class="file-input" id="csv-upload" accept=".csv">
@@ -604,58 +590,63 @@
         function handleFileUpload(event) {
             const file = event.target.files[0];
             if (!file) return;
-            
-            const selectedEncoding = document.querySelector('input[name="encoding"]:checked').value;
 
-            Papa.parse(file, {
-                encoding: selectedEncoding,
-                dynamicTyping: true,
-                skipEmptyLines: false,
-                complete: function(results) {
-                    if (results.errors.length > 0) {
-                        console.error("PapaParse Errors:", results.errors);
-                        showCustomAlert('CSVファイルの解析中にエラーが発生しました。文字コードの選択が正しいか確認してください。');
-                        return;
-                    }
-                    if (!results.data || results.data.length === 0) {
-                        showCustomAlert('CSVファイルが空か、読み込めませんでした。');
-                        return;
-                    }
-                    
-                    try {
-                        const newData = processAttendanceData(results.data, file.name);
-                        
-                        // 既存データとマージ
-                        attendanceData = { ...attendanceData, ...newData };
-                        
-                        const newFileInfo = {
-                            name: file.name,
-                            uploadDate: new Date().toISOString(),
-                            id: Date.now()
-                        };
-                        uploadedFiles.push(newFileInfo);
-                        
-                        saveData();
-                        
-                        // UIを全体的に更新
-                        displayTodayStaff();
-                        displaySelectedStaff();
-                        displayUploadedFiles();
-                        updateCalendar();
-                        updateStaffList();
-                        
-                        showCustomAlert('ファイルのアップロードが完了しました！');
-                    } catch(error) {
-                        console.error('Error processing file:', error);
-                        showCustomAlert('ファイルの処理中にエラーが発生しました。CSVファイルの形式を確認してください。');
-                    }
-                },
-                error: function(err) {
-                    console.error("PapaParse File Read Error:", err);
-                    showCustomAlert('CSVファイルの読み込みに失敗しました。ファイルが破損していないか、文字コードの選択が正しいか確認してください。');
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                const buffer = e.target.result;
+                let encoding = 'utf-8';
+                try {
+                    new TextDecoder('utf-8', { fatal: true }).decode(buffer);
+                } catch (err) {
+                    encoding = 'shift_jis';
                 }
-            });
-            
+
+                const text = new TextDecoder(encoding).decode(buffer);
+                const results = Papa.parse(text, {
+                    dynamicTyping: true,
+                    skipEmptyLines: false
+                });
+
+                if (results.errors.length > 0 || !results.data || results.data.length === 0) {
+                    console.error("PapaParse Errors:", results.errors);
+                    showCustomAlert('CSVファイルの解析中にエラーが発生しました。文字コードが正しいか確認してください。');
+                    return;
+                }
+
+                try {
+                    const newData = processAttendanceData(results.data, file.name);
+
+                    // 既存データとマージ
+                    attendanceData = { ...attendanceData, ...newData };
+
+                    const newFileInfo = {
+                        name: file.name,
+                        uploadDate: new Date().toISOString(),
+                        id: Date.now()
+                    };
+                    uploadedFiles.push(newFileInfo);
+
+                    saveData();
+
+                    // UIを全体的に更新
+                    displayTodayStaff();
+                    displaySelectedStaff();
+                    displayUploadedFiles();
+                    updateCalendar();
+                    updateStaffList();
+
+                    showCustomAlert('ファイルのアップロードが完了しました！');
+                } catch (error) {
+                    console.error('Error processing file:', error);
+                    showCustomAlert('ファイルの処理中にエラーが発生しました。CSVファイルの形式を確認してください。');
+                }
+            };
+            reader.onerror = function(err) {
+                console.error('File Read Error:', err);
+                showCustomAlert('CSVファイルの読み込みに失敗しました。ファイルが破損していないか、文字コードが正しいか確認してください。');
+            };
+            reader.readAsArrayBuffer(file);
+
             event.target.value = '';
         }
         
