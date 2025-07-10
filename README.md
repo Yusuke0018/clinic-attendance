@@ -1,92 +1,85 @@
-# ファイル共有システム
+# ファイル共有システム（GitHub版）
 
-シンプルなファイル共有システムです。管理者がファイルをアップロードし、誰でも閲覧・ダウンロードできます。
+GitHubを使用した完全無料のファイル共有システムです。
+
+## 特徴
+
+- 完全無料（GitHubの無料枠を使用）
+- Firebase不要
+- 管理者のみファイルアップロード可能
+- 誰でもファイルを閲覧・ダウンロード可能
+- GitHub Pagesでホスティング可能
 
 ## セットアップ手順
 
-### 1. Firebaseプロジェクトの作成
+### 1. GitHub Personal Access Tokenの取得
 
-1. [Firebase Console](https://console.firebase.google.com/) にアクセス
-2. 「プロジェクトを作成」をクリック
-3. プロジェクト名を入力（例: clinic-file-share）
-4. Googleアナリティクスは「今は設定しない」を選択（シンプルにするため）
+1. [GitHub](https://github.com) にログイン
+2. 右上のプロフィールアイコン → Settings
+3. 左メニューの一番下「Developer settings」
+4. 「Personal access tokens」→「Tokens (classic)」
+5. 「Generate new token (classic)」をクリック
+6. Note欄に「File Share System」など任意の名前を入力
+7. Expiration（有効期限）を選択（90日推奨）
+8. Select scopesで「repo」にチェック
+9. 「Generate token」をクリック
+10. 生成されたトークン（ghp_で始まる文字列）をコピー
 
-### 2. Firebase Storageの有効化
+**重要**: トークンは一度しか表示されません。必ずコピーして保存してください。
 
-1. 左メニューから「Storage」を選択
-2. 「始める」をクリック
-3. セキュリティルールは「本番環境モード」を選択
-4. ロケーションは「asia-northeast1（東京）」を選択
+### 2. GitHub Pagesの有効化
 
-### 3. Storageルールの設定
+1. リポジトリの「Settings」タブを開く
+2. 左メニューの「Pages」をクリック
+3. Source: Deploy from a branch
+4. Branch: main、/(root)を選択
+5. 「Save」をクリック
 
-Storage > ルール で以下を設定：
+数分後、`https://yusuke0018.github.io/clinic-attendance/` でアクセス可能になります。
 
-```
-rules_version = '2';
-service firebase.storage {
-  match /b/{bucket}/o {
-    match /files/{allPaths=**} {
-      allow read: if true;
-      allow write: if true;
-    }
-  }
-}
-```
+### 3. システムの初期設定
 
-※ これは簡易的なルールです。本番環境では認証を追加してください。
-
-### 4. Firebase設定の取得
-
-1. プロジェクト設定（歯車アイコン）をクリック
-2. 「全般」タブの下部「マイアプリ」セクション
-3. 「</> ウェブ」アイコンをクリック
-4. アプリ名を入力（例: file-share-web）
-5. 「Firebase Hostingも設定」のチェックは外す
-6. 「アプリを登録」をクリック
-7. 表示される設定値をコピー
-
-### 5. index.htmlの設定
-
-index.htmlの以下の部分を、取得した設定値に置き換えてください：
-
-```javascript
-const firebaseConfig = {
-    apiKey: "YOUR_API_KEY",
-    authDomain: "YOUR_AUTH_DOMAIN",
-    projectId: "YOUR_PROJECT_ID",
-    storageBucket: "YOUR_STORAGE_BUCKET",
-    messagingSenderId: "YOUR_MESSAGING_SENDER_ID",
-    appId: "YOUR_APP_ID"
-};
-```
-
-### 6. 管理者パスワードの変更
-
-index.htmlの242行目：
-```javascript
-const ADMIN_PASSWORD = 'admin123';
-```
-を任意のパスワードに変更してください。
+1. ブラウザでindex.htmlを開く（またはGitHub PagesのURL）
+2. 初期設定画面で以下を入力：
+   - GitHub Personal Access Token（先ほどコピーしたもの）
+   - 管理者パスワード（任意に設定）
+3. 「設定を保存」をクリック
 
 ## 使い方
 
-1. index.htmlをブラウザで開く
-2. 管理者でログイン（設定したパスワード）
-3. ファイルをドラッグ＆ドロップまたは選択してアップロード
-4. アップロードされたファイルは自動的に一覧に表示される
-5. 誰でもファイルをダウンロード可能
+### 管理者（ファイルアップロード）
 
-## 機能
+1. 管理者パスワードでログイン
+2. ファイルをドラッグ＆ドロップまたは選択してアップロード
+3. アップロードされたファイルは自動的にGitHubリポジトリの`files`フォルダに保存
 
-- 管理者ログイン（簡易パスワード認証）
-- ファイルアップロード（ドラッグ＆ドロップ対応）
-- ファイル一覧表示
-- ファイルダウンロード
-- レスポンシブデザイン
+### 一般ユーザー（ファイル閲覧）
 
-## 注意事項
+1. ページを開くとファイル一覧が表示される
+2. 「ダウンロード」ボタンでファイルをダウンロード
 
-- 本番環境では適切な認証システムを実装してください
-- 大容量ファイルのアップロードにはFirebaseの容量制限があります
-- 無料プランでは1日あたりのダウンロード量に制限があります
+## 制限事項
+
+- ファイルサイズ: 1ファイル最大100MB（GitHubの制限）
+- リポジトリ容量: 最大1GB推奨（GitHubの推奨値）
+- API制限: 1時間あたり5000リクエスト（認証あり）
+
+## セキュリティ注意事項
+
+- Personal Access Tokenは他人に教えないでください
+- パブリックリポジトリの場合、アップロードしたファイルは誰でも閲覧可能です
+- 機密情報を含むファイルはアップロードしないでください
+
+## トラブルシューティング
+
+### ファイル一覧が表示されない
+- Personal Access Tokenが正しく設定されているか確認
+- トークンの有効期限が切れていないか確認
+
+### アップロードエラーが発生する
+- ファイルサイズが100MBを超えていないか確認
+- インターネット接続を確認
+
+### ログインできない
+- 設定した管理者パスワードが正しいか確認
+- ブラウザのキャッシュをクリアして再試行

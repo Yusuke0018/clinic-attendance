@@ -62,6 +62,7 @@
         }
         
         input[type="password"],
+        input[type="text"],
         input[type="file"] {
             width: 100%;
             padding: 10px;
@@ -129,9 +130,10 @@
             color: #2c3e50;
         }
         
-        .file-size {
+        .file-date {
             color: #7f8c8d;
             font-size: 14px;
+            margin-left: 10px;
         }
         
         .download-btn {
@@ -146,6 +148,22 @@
         
         .download-btn:hover {
             background-color: #2980b9;
+        }
+        
+        .delete-btn {
+            background-color: #e74c3c;
+            color: white;
+            padding: 5px 15px;
+            border: none;
+            border-radius: 4px;
+            font-size: 14px;
+            margin-left: 10px;
+            cursor: pointer;
+            transition: background-color 0.3s;
+        }
+        
+        .delete-btn:hover {
+            background-color: #c0392b;
         }
         
         .hidden {
@@ -175,19 +193,68 @@
             padding: 40px;
             color: #7f8c8d;
         }
+        
+        .settings-info {
+            background-color: #e8f4fd;
+            border: 1px solid #bee5eb;
+            padding: 15px;
+            border-radius: 4px;
+            margin-bottom: 20px;
+        }
+        
+        .settings-info h3 {
+            margin-bottom: 10px;
+            color: #004085;
+        }
+        
+        .settings-info p {
+            margin-bottom: 5px;
+            color: #004085;
+        }
+        
+        .token-input {
+            margin-bottom: 20px;
+            padding: 20px;
+            background-color: #f8f9fa;
+            border-radius: 8px;
+        }
     </style>
 </head>
 <body>
     <div class="container">
         <header>
             <h1>ファイル共有システム</h1>
-            <p>管理者がアップロードしたファイルを共有できます</p>
+            <p>GitHubを使用した無料のファイル共有システム</p>
         </header>
         
         <div id="message"></div>
         
+        <!-- 初期設定セクション -->
+        <div class="admin-section" id="setupSection">
+            <h2>初期設定</h2>
+            <div class="settings-info">
+                <h3>GitHub Personal Access Tokenの取得方法</h3>
+                <p>1. GitHubにログイン</p>
+                <p>2. Settings → Developer settings → Personal access tokens → Tokens (classic)</p>
+                <p>3. Generate new token (classic)をクリック</p>
+                <p>4. repo権限にチェックを入れて生成</p>
+                <p>5. 生成されたトークンをコピー（一度しか表示されません）</p>
+            </div>
+            <div class="token-input">
+                <div class="form-group">
+                    <label for="githubToken">GitHub Personal Access Token:</label>
+                    <input type="password" id="githubToken" placeholder="ghp_xxxxxxxxxxxx">
+                </div>
+                <div class="form-group">
+                    <label for="adminPassword">管理者パスワード（任意）:</label>
+                    <input type="password" id="adminPassword" placeholder="管理者用パスワードを設定">
+                </div>
+                <button onclick="saveSettings()">設定を保存</button>
+            </div>
+        </div>
+        
         <!-- 管理者ログインセクション -->
-        <div class="admin-section" id="loginSection">
+        <div class="admin-section hidden" id="loginSection">
             <h2>管理者ログイン</h2>
             <div class="login-form">
                 <div class="form-group">
@@ -213,33 +280,48 @@
         <div class="file-list">
             <h2>共有ファイル一覧</h2>
             <div id="fileList" class="loading">
-                <p>読み込み中...</p>
+                <p>設定を完了してください</p>
             </div>
         </div>
     </div>
     
-    <!-- Firebase SDK -->
-    <script type="module">
-        import { initializeApp } from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js';
-        import { getStorage, ref, uploadBytes, getDownloadURL, listAll } from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-storage.js';
+    <script>
+        // 設定
+        const GITHUB_OWNER = 'Yusuke0018';
+        const GITHUB_REPO = 'clinic-attendance';
+        const FILES_PATH = 'files';
         
-        // Firebase設定（後で実際の設定値に置き換えてください）
-        const firebaseConfig = {
-            apiKey: "YOUR_API_KEY",
-            authDomain: "YOUR_AUTH_DOMAIN",
-            projectId: "YOUR_PROJECT_ID",
-            storageBucket: "YOUR_STORAGE_BUCKET",
-            messagingSenderId: "YOUR_MESSAGING_SENDER_ID",
-            appId: "YOUR_APP_ID"
-        };
-        
-        // Firebaseの初期化
-        const app = initializeApp(firebaseConfig);
-        const storage = getStorage(app);
-        
-        // グローバル変数
+        let githubToken = localStorage.getItem('githubToken');
+        let adminPassword = localStorage.getItem('adminPassword');
         let isAdmin = false;
-        const ADMIN_PASSWORD = 'admin123'; // 実際の使用時は安全なパスワードに変更してください
+        
+        // 初期設定の確認
+        function checkSetup() {
+            if (githubToken && adminPassword) {
+                document.getElementById('setupSection').classList.add('hidden');
+                document.getElementById('loginSection').classList.remove('hidden');
+                loadFileList();
+            }
+        }
+        
+        // 設定の保存
+        function saveSettings() {
+            const token = document.getElementById('githubToken').value;
+            const password = document.getElementById('adminPassword').value;
+            
+            if (!token || !password) {
+                showMessage('トークンとパスワードの両方を入力してください', 'error');
+                return;
+            }
+            
+            localStorage.setItem('githubToken', token);
+            localStorage.setItem('adminPassword', password);
+            githubToken = token;
+            adminPassword = password;
+            
+            showMessage('設定を保存しました', 'success');
+            checkSetup();
+        }
         
         // メッセージ表示
         function showMessage(text, type) {
@@ -253,9 +335,9 @@
         }
         
         // ログイン処理
-        window.login = function() {
+        function login() {
             const password = document.getElementById('password').value;
-            if (password === ADMIN_PASSWORD) {
+            if (password === adminPassword) {
                 isAdmin = true;
                 document.getElementById('loginSection').classList.add('hidden');
                 document.getElementById('uploadSection').classList.remove('hidden');
@@ -264,56 +346,139 @@
             } else {
                 showMessage('パスワードが間違っています', 'error');
             }
-        };
+        }
         
         // ログアウト処理
-        window.logout = function() {
+        function logout() {
             isAdmin = false;
             document.getElementById('loginSection').classList.remove('hidden');
             document.getElementById('uploadSection').classList.add('hidden');
             showMessage('ログアウトしました', 'success');
-        };
+        }
+        
+        // Base64エンコード
+        function base64Encode(str) {
+            return btoa(unescape(encodeURIComponent(str)));
+        }
         
         // ファイルアップロード
         async function uploadFile(file) {
+            const reader = new FileReader();
+            reader.onload = async function(e) {
+                const content = e.target.result;
+                const base64Content = content.split(',')[1]; // data:URLからBase64部分を抽出
+                
+                try {
+                    const response = await fetch(`https://api.github.com/repos/${GITHUB_OWNER}/${GITHUB_REPO}/contents/${FILES_PATH}/${file.name}`, {
+                        method: 'PUT',
+                        headers: {
+                            'Authorization': `token ${githubToken}`,
+                            'Content-Type': 'application/json',
+                        },
+                        body: JSON.stringify({
+                            message: `Upload ${file.name}`,
+                            content: base64Content,
+                            branch: 'main'
+                        })
+                    });
+                    
+                    if (response.ok) {
+                        showMessage(`${file.name} をアップロードしました`, 'success');
+                        loadFileList();
+                    } else {
+                        const error = await response.json();
+                        showMessage(`アップロードエラー: ${error.message}`, 'error');
+                    }
+                } catch (error) {
+                    showMessage('アップロードエラー: ' + error.message, 'error');
+                }
+            };
+            reader.readAsDataURL(file);
+        }
+        
+        // ファイル削除
+        async function deleteFile(fileName, sha) {
+            if (!confirm(`${fileName} を削除しますか？`)) return;
+            
             try {
-                const storageRef = ref(storage, 'files/' + file.name);
-                const snapshot = await uploadBytes(storageRef, file);
-                showMessage(`${file.name} をアップロードしました`, 'success');
-                loadFileList();
+                const response = await fetch(`https://api.github.com/repos/${GITHUB_OWNER}/${GITHUB_REPO}/contents/${FILES_PATH}/${fileName}`, {
+                    method: 'DELETE',
+                    headers: {
+                        'Authorization': `token ${githubToken}`,
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({
+                        message: `Delete ${fileName}`,
+                        sha: sha,
+                        branch: 'main'
+                    })
+                });
+                
+                if (response.ok) {
+                    showMessage(`${fileName} を削除しました`, 'success');
+                    loadFileList();
+                } else {
+                    const error = await response.json();
+                    showMessage(`削除エラー: ${error.message}`, 'error');
+                }
             } catch (error) {
-                showMessage('アップロードエラー: ' + error.message, 'error');
+                showMessage('削除エラー: ' + error.message, 'error');
             }
         }
         
         // ファイル一覧の読み込み
         async function loadFileList() {
+            if (!githubToken) return;
+            
             const fileListEl = document.getElementById('fileList');
             fileListEl.innerHTML = '<p>読み込み中...</p>';
             
             try {
-                const listRef = ref(storage, 'files');
-                const result = await listAll(listRef);
+                const response = await fetch(`https://api.github.com/repos/${GITHUB_OWNER}/${GITHUB_REPO}/contents/${FILES_PATH}`, {
+                    headers: {
+                        'Authorization': `token ${githubToken}`,
+                    }
+                });
                 
-                if (result.items.length === 0) {
+                if (response.status === 404) {
+                    // filesディレクトリが存在しない場合
+                    fileListEl.innerHTML = '<p>ファイルがありません</p>';
+                    return;
+                }
+                
+                if (!response.ok) {
+                    throw new Error('ファイル一覧の取得に失敗しました');
+                }
+                
+                const files = await response.json();
+                
+                if (files.length === 0) {
                     fileListEl.innerHTML = '<p>ファイルがありません</p>';
                     return;
                 }
                 
                 fileListEl.innerHTML = '';
                 
-                for (const itemRef of result.items) {
-                    const url = await getDownloadURL(itemRef);
+                files.forEach(file => {
                     const fileItem = document.createElement('div');
                     fileItem.className = 'file-item';
-                    fileItem.innerHTML = `
-                        <div>
-                            <div class="file-name">${itemRef.name}</div>
-                        </div>
-                        <a href="${url}" download class="download-btn">ダウンロード</a>
+                    
+                    const fileInfo = document.createElement('div');
+                    fileInfo.innerHTML = `
+                        <span class="file-name">${file.name}</span>
+                        <span class="file-date">${new Date(file.sha).toLocaleDateString('ja-JP')}</span>
                     `;
+                    
+                    const actions = document.createElement('div');
+                    actions.innerHTML = `
+                        <a href="${file.download_url}" download class="download-btn">ダウンロード</a>
+                        ${isAdmin ? `<button class="delete-btn" onclick="deleteFile('${file.name}', '${file.sha}')">削除</button>` : ''}
+                    `;
+                    
+                    fileItem.appendChild(fileInfo);
+                    fileItem.appendChild(actions);
                     fileListEl.appendChild(fileItem);
-                }
+                });
             } catch (error) {
                 fileListEl.innerHTML = '<p>ファイルの読み込みに失敗しました</p>';
                 console.error(error);
@@ -367,8 +532,8 @@
             }
         });
         
-        // 初期読み込み
-        loadFileList();
+        // 初期化
+        checkSetup();
     </script>
 </body>
 </html>
