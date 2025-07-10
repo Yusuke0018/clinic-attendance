@@ -478,38 +478,54 @@
                     return false;
                 }
                 
-                // 最新のCSVファイルを取得（ファイル名でソート）
-                csvFiles.sort((a, b) => b.name.localeCompare(a.name));
-                const latestFile = csvFiles[0];
+                // 全てのCSVファイルを処理
+                let allData = {};
+                let loadedFiles = [];
                 
-                // CSVファイルの内容を取得
-                const csvResponse = await fetch(latestFile.download_url);
-                const csvText = await csvResponse.text();
-                
-                // CSVをパース
-                const results = Papa.parse(csvText, {
-                    dynamicTyping: true,
-                    skipEmptyLines: false
-                });
-                
-                if (results.errors.length > 0) {
-                    console.error('CSV解析エラー:', results.errors);
-                    return false;
+                for (const csvFile of csvFiles) {
+                    try {
+                        // CSVファイルの内容を取得
+                        const csvResponse = await fetch(csvFile.download_url);
+                        const csvText = await csvResponse.text();
+                        
+                        // CSVをパース
+                        const results = Papa.parse(csvText, {
+                            dynamicTyping: true,
+                            skipEmptyLines: false
+                        });
+                        
+                        if (results.errors.length > 0) {
+                            console.error(`${csvFile.name}の解析エラー:`, results.errors);
+                            continue;
+                        }
+                        
+                        // データを処理
+                        const monthData = processAttendanceData(results.data, csvFile.name);
+                        
+                        // 全データにマージ
+                        allData = { ...allData, ...monthData };
+                        
+                        // 読み込んだファイル情報を記録
+                        loadedFiles.push({
+                            name: csvFile.name + ' (自動読み込み)',
+                            uploadDate: new Date().toISOString(),
+                            id: Date.now() + loadedFiles.length
+                        });
+                        
+                        console.log(`${csvFile.name}を読み込みました`);
+                    } catch (error) {
+                        console.error(`${csvFile.name}の読み込みエラー:`, error);
+                    }
                 }
                 
-                // データを処理
-                const newData = processAttendanceData(results.data, latestFile.name);
-                attendanceData = newData;
+                if (Object.keys(allData).length > 0) {
+                    attendanceData = allData;
+                    uploadedFiles = loadedFiles;
+                    saveData();
+                    return true;
+                }
                 
-                // 自動読み込みしたファイル情報を記録
-                uploadedFiles = [{
-                    name: latestFile.name + ' (自動読み込み)',
-                    uploadDate: new Date().toISOString(),
-                    id: Date.now()
-                }];
-                
-                saveData();
-                return true;
+                return false;
                 
             } catch (error) {
                 console.error('GitHub自動読み込みエラー:', error);
