@@ -16,14 +16,16 @@ GitHubを使用した完全無料のファイル共有システムです。
 
 1. [GitHub](https://github.com) にログイン
 2. 右上のプロフィールアイコン → Settings
-3. 左メニューの一番下「Developer settings」
-4. 「Personal access tokens」→「Tokens (classic)」
-5. 「Generate new token (classic)」をクリック
-6. Note欄に「File Share System」など任意の名前を入力
-7. Expiration（有効期限）を選択（90日推奨）
-8. Select scopesで「repo」にチェック
-9. 「Generate token」をクリック
-10. 生成されたトークン（ghp_で始まる文字列）をコピー
+3. 左サイドバーを一番下までスクロール
+4. 「Developer settings」をクリック（左メニューの最下部にあります）
+   - もし見つからない場合は、直接このURLにアクセス: https://github.com/settings/tokens
+5. 「Personal access tokens」→「Tokens (classic)」
+6. 「Generate new token」→「Generate new token (classic)」をクリック
+7. Note欄に「File Share System」など任意の名前を入力
+8. Expiration（有効期限）を選択（90日推奨）
+9. Select scopesで「repo」の横のチェックボックスにチェック（repoの下の項目も自動的にチェックされます）
+10. ページ最下部の緑色の「Generate token」ボタンをクリック
+11. 生成されたトークン（ghp_で始まる文字列）をコピー
 
 **重要**: トークンは一度しか表示されません。必ずコピーして保存してください。
 
