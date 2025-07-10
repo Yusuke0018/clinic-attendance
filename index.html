@@ -280,7 +280,7 @@
         <div class="file-list">
             <h2>共有ファイル一覧</h2>
             <div id="fileList" class="loading">
-                <p>設定を完了してください</p>
+                <p>読み込み中...</p>
             </div>
         </div>
     </div>
@@ -300,6 +300,9 @@
             if (githubToken && adminPassword) {
                 document.getElementById('setupSection').classList.add('hidden');
                 document.getElementById('loginSection').classList.remove('hidden');
+                loadFileList();
+            } else {
+                // トークンがなくても閲覧は可能
                 loadFileList();
             }
         }
@@ -428,16 +431,17 @@
         
         // ファイル一覧の読み込み
         async function loadFileList() {
-            if (!githubToken) return;
-            
             const fileListEl = document.getElementById('fileList');
             fileListEl.innerHTML = '<p>読み込み中...</p>';
             
             try {
+                // トークンがある場合は認証付き、ない場合は公開APIとして使用
+                const headers = githubToken ? {
+                    'Authorization': `token ${githubToken}`,
+                } : {};
+                
                 const response = await fetch(`https://api.github.com/repos/${GITHUB_OWNER}/${GITHUB_REPO}/contents/${FILES_PATH}`, {
-                    headers: {
-                        'Authorization': `token ${githubToken}`,
-                    }
+                    headers: headers
                 });
                 
                 if (response.status === 404) {
