@@ -2,925 +2,373 @@
 <html lang="ja">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>クリニック勤務者確認システム</title>
-    <!-- Favicon: 青い円に白い十字のアイコンを追加 -->
-    <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><circle cx='50' cy='50' r='48' fill='%232196F3' stroke='white' stroke-width='4'/><rect x='45' y='25' width='10' height='50' fill='white'/><rect x='25' y='45' width='50' height='10' fill='white'/></svg>">
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.4.1/papaparse.min.js"></script>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ファイル共有システム</title>
     <style>
-        /* 基本スタイル */
         * {
             margin: 0;
             padding: 0;
             box-sizing: border-box;
-            -webkit-tap-highlight-color: transparent;
         }
         
         body {
-            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Hiragino Sans', sans-serif;
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
             background-color: #f5f5f5;
             color: #333;
             line-height: 1.6;
-            -webkit-text-size-adjust: 100%;
         }
         
         .container {
             max-width: 1200px;
             margin: 0 auto;
-            padding: 10px;
+            padding: 20px;
+        }
+        
+        header {
+            background-color: #fff;
+            padding: 20px;
+            margin-bottom: 30px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            border-radius: 8px;
         }
         
         h1 {
+            font-size: 24px;
+            color: #2c3e50;
+            margin-bottom: 10px;
+        }
+        
+        .admin-section {
+            background-color: #fff;
+            padding: 30px;
+            margin-bottom: 30px;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        
+        .login-form {
+            max-width: 400px;
+            margin: 0 auto;
+        }
+        
+        .form-group {
+            margin-bottom: 20px;
+        }
+        
+        label {
+            display: block;
+            margin-bottom: 5px;
+            font-weight: 500;
+        }
+        
+        input[type="password"],
+        input[type="file"] {
+            width: 100%;
+            padding: 10px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            font-size: 16px;
+        }
+        
+        button {
+            background-color: #4CAF50;
+            color: white;
+            padding: 10px 20px;
+            border: none;
+            border-radius: 4px;
+            font-size: 16px;
+            cursor: pointer;
+            transition: background-color 0.3s;
+        }
+        
+        button:hover {
+            background-color: #45a049;
+        }
+        
+        button:disabled {
+            background-color: #ccc;
+            cursor: not-allowed;
+        }
+        
+        .upload-area {
+            border: 2px dashed #ddd;
+            border-radius: 8px;
+            padding: 40px;
             text-align: center;
             margin-bottom: 20px;
-            color: #2c3e50;
-            font-size: 24px;
+            transition: border-color 0.3s;
         }
         
-        .section {
-            background: white;
-            border-radius: 10px;
-            padding: 15px;
-            margin-bottom: 15px;
-            box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+        .upload-area.dragover {
+            border-color: #4CAF50;
+            background-color: #f0f8f0;
         }
         
-        .section-title {
-            font-size: 18px;
-            font-weight: bold;
-            margin-bottom: 10px;
-            display: flex;
-            align-items: center;
-            gap: 8px;
-        }
-        
-        .today-section {
-            background-color: #e3f2fd;
-        }
-        
-        .staff-grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fill, minmax(100px, 1fr));
-            gap: 8px;
-            margin-top: 10px;
-        }
-        
-        .staff-card {
-            background: white;
-            padding: 8px 10px;
-            border-radius: 5px;
-            box-shadow: 0 1px 3px rgba(0,0,0,0.1);
-            text-align: center;
-            font-size: 14px;
-        }
-        
-        /* ファイルアップロード */
-        .upload-button {
-            background-color: #2196F3;
-            color: white;
-            padding: 12px 20px;
-            border-radius: 5px;
-            cursor: pointer;
-            display: inline-block;
-            transition: background-color 0.3s;
-            font-size: 14px;
-            width: 100%;
-            text-align: center;
-        }
-        
-        .upload-button:hover {
-            background-color: #1976D2;
-        }
-        
-        .file-input {
-            display: none;
-        }
-
-        
-        .uploaded-files {
-            margin-top: 15px;
+        .file-list {
+            background-color: #fff;
+            padding: 30px;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
         }
         
         .file-item {
             display: flex;
             justify-content: space-between;
             align-items: center;
-            padding: 8px;
-            background: #f9f9f9;
-            border-radius: 5px;
-            margin-bottom: 8px;
-            font-size: 12px;
-        }
-        
-        .delete-button {
-            background: #f44336;
-            color: white;
-            border: none;
-            padding: 5px 10px;
-            border-radius: 3px;
-            cursor: pointer;
-            font-size: 12px;
-        }
-        
-        /* カレンダー */
-        .calendar-header {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            margin-bottom: 15px;
-        }
-        
-        .calendar-nav {
-            background: #e0e0e0;
-            border: none;
-            font-size: 20px;
-            cursor: pointer;
-            padding: 8px 16px;
-            border-radius: 5px;
-            min-width: 44px;
-            min-height: 44px;
-        }
-        
-        .calendar-nav:active {
-            background-color: #bdbdbd;
-        }
-        
-        .calendar-grid {
-            display: grid;
-            grid-template-columns: repeat(7, 1fr);
-            gap: 2px;
-        }
-        
-        .weekday-header {
-            text-align: center;
-            font-weight: bold;
-            padding: 5px;
-            font-size: 12px;
-            background-color: #f5f5f5;
-        }
-        
-        .calendar-day {
-            aspect-ratio: 1;
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            justify-content: flex-start;
-            cursor: pointer;
-            border-radius: 3px;
-            position: relative;
-            background: white;
-            border: 1px solid #e0e0e0;
-            padding: 2px;
-            min-height: 50px;
-            overflow: hidden;
-        }
-        
-        .calendar-day-number {
-            font-size: 12px;
-            font-weight: bold;
-            line-height: 1;
-            margin-bottom: 1px;
-        }
-        
-        .calendar-names {
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            width: 100%;
-            font-size: 7px; /* Default small size */
-            line-height: 1;
-            gap: 1px;
-        }
-        
-        .calendar-doctor { color: #d32f2f; font-weight: bold; }
-        .calendar-staff { color: #1976d2; font-weight: bold; }
-        .calendar-special { color: #388e3c; font-weight: bold; }
-        
-        .calendar-day:active { background-color: #e3f2fd; }
-        .calendar-day.other-month { color: #ccc; background-color: #fafafa; }
-        .calendar-day.today { background-color: #bbdefb; border-color: #2196F3; border-width: 2px; }
-        .calendar-day.selected { border: 2px solid #2196F3; background-color: #e3f2fd; }
-        
-        .no-data {
-            color: #999;
-            text-align: center;
-            padding: 20px;
-            font-size: 14px;
-        }
-        
-        /* 検索機能 */
-        .search-container {
-            display: flex;
-            gap: 8px;
-            margin-bottom: 15px;
-            flex-wrap: wrap;
-        }
-        
-        .staff-select {
-            flex: 1;
-            min-width: 150px;
-            padding: 10px;
-            border: 1px solid #ddd;
-            border-radius: 5px;
-            font-size: 14px;
-            background-color: white;
-            cursor: pointer;
-        }
-        
-        .search-button, .clear-button {
-            padding: 10px 16px;
-            border: none;
-            border-radius: 5px;
-            cursor: pointer;
-            font-size: 14px;
-            font-weight: bold;
+            padding: 15px;
+            border-bottom: 1px solid #eee;
             transition: background-color 0.3s;
         }
         
-        .search-button { background-color: #4CAF50; color: white; }
-        .search-button:hover { background-color: #45a049; }
-        .clear-button { background-color: #f44336; color: white; }
-        .clear-button:hover { background-color: #da190b; }
+        .file-item:hover {
+            background-color: #f8f8f8;
+        }
         
-        .search-result {
-            margin-bottom: 10px;
-            padding: 10px;
-            background-color: #fff3cd;
-            border-radius: 5px;
+        .file-name {
+            font-weight: 500;
+            color: #2c3e50;
+        }
+        
+        .file-size {
+            color: #7f8c8d;
             font-size: 14px;
+        }
+        
+        .download-btn {
+            background-color: #3498db;
+            color: white;
+            padding: 5px 15px;
+            text-decoration: none;
+            border-radius: 4px;
+            font-size: 14px;
+            transition: background-color 0.3s;
+        }
+        
+        .download-btn:hover {
+            background-color: #2980b9;
+        }
+        
+        .hidden {
             display: none;
         }
         
-        .calendar-day.search-highlight {
-            background-color: #ffeb3b !important;
-            border-color: #f9a825 !important;
-            animation: pulse 1s infinite;
-        }
-        
-        @keyframes pulse {
-            0% { transform: scale(1); }
-            50% { transform: scale(1.05); }
-            100% { transform: scale(1); }
-        }
-        
-        /* カスタムアラート（モーダル）のスタイル */
-        .modal-overlay {
-            display: none; /* 初期状態は非表示 */
-            position: fixed;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            background: rgba(0, 0, 0, 0.6);
-            z-index: 1000;
-            justify-content: center;
-            align-items: center;
-        }
-
-        .modal-content {
-            background: white;
-            padding: 25px;
-            border-radius: 10px;
-            text-align: center;
-            box-shadow: 0 5px 15px rgba(0,0,0,0.3);
-            max-width: 90%;
-            width: 320px;
-            animation: fadeIn 0.3s ease-out;
-        }
-        
-        @keyframes fadeIn {
-            from { opacity: 0; transform: scale(0.9); }
-            to { opacity: 1; transform: scale(1); }
-        }
-
-        .modal-content p {
+        .message {
+            padding: 15px;
+            border-radius: 4px;
             margin-bottom: 20px;
-            font-size: 16px;
-            line-height: 1.5;
-        }
-
-        .modal-close-button {
-            background-color: #2196F3;
-            color: white;
-            border: none;
-            padding: 10px 25px;
-            border-radius: 5px;
-            cursor: pointer;
-            font-size: 16px;
-            font-weight: bold;
-            transition: background-color 0.3s;
-        }
-
-        .modal-close-button:hover {
-            background-color: #1976D2;
         }
         
-        /* レスポンシブ対応 */
-        /* スマホ向け */
-        @media (max-width: 480px) {
-            .container { padding: 8px; }
-            h1 { font-size: 20px; margin-bottom: 15px; }
-            .section { padding: 12px; margin-bottom: 12px; }
-            .section-title { font-size: 16px; }
-            .staff-grid { grid-template-columns: repeat(3, 1fr); gap: 6px; }
-            .staff-card { font-size: 12px; padding: 6px 8px; }
-            .calendar-grid { gap: 1px; }
-            .weekday-header { font-size: 11px; padding: 4px 0; }
-            .calendar-day { min-height: 45px; padding: 1px; }
-            .calendar-day-number { font-size: 11px; }
-            .calendar-names { font-size: 6px; }
-            #calendar-month { font-size: 16px; }
-            .search-container { flex-direction: column; }
-            .staff-select, .search-button, .clear-button { width: 100%; min-width: auto; }
+        .success {
+            background-color: #d4edda;
+            color: #155724;
+            border: 1px solid #c3e6cb;
         }
         
-        /* タブレット向け */
-        @media (min-width: 481px) and (max-width: 768px) {
-            .staff-grid { grid-template-columns: repeat(4, 1fr); }
-            .calendar-day { min-height: 60px; }
-            .calendar-names { font-size: 8px; }
+        .error {
+            background-color: #f8d7da;
+            color: #721c24;
+            border: 1px solid #f5c6cb;
         }
         
-        /* デスクトップ向け */
-        @media (min-width: 769px) {
-            .calendar-day {
-                min-height: 100px; /* 十分な高さを確保 */
-                padding: 4px;
-                aspect-ratio: auto; /* アスペクト比を自動に */
-            }
-            .calendar-day-number {
-                font-size: 14px; /* 日付の数字を大きく */
-                margin-bottom: 4px;
-            }
-            .calendar-names {
-                font-size: 12px; /* ★名前のフォントを大幅に拡大 */
-                gap: 2px;
-                line-height: 1.2;
-            }
-        }
-        
-        @media (orientation: landscape) and (max-height: 500px) {
-            h1 { margin-bottom: 10px; font-size: 20px; }
-            .section { padding: 10px; margin-bottom: 10px; }
-            .calendar-day { min-height: 40px; }
+        .loading {
+            text-align: center;
+            padding: 40px;
+            color: #7f8c8d;
         }
     </style>
 </head>
 <body>
     <div class="container">
-        <h1>クリニック勤務者確認システム</h1>
+        <header>
+            <h1>ファイル共有システム</h1>
+            <p>管理者がアップロードしたファイルを共有できます</p>
+        </header>
         
-        <!-- 本日の勤務者 -->
-        <div class="section today-section">
-            <h2 class="section-title">
-                👥 本日の勤務者（<span id="today-date"></span>）
-            </h2>
-            <div id="today-staff" class="staff-grid"></div>
-        </div>
+        <div id="message"></div>
         
-        <!-- データ管理 -->
-        <div class="section">
-            <h3 class="section-title">📁 データ管理</h3>
-            
-
-            <label class="upload-button" style="margin-top: 10px;">
-                <input type="file" class="file-input" id="csv-upload" accept=".csv">
-                📤 CSVファイルをアップロード
-            </label>
-            <div class="uploaded-files" id="uploaded-files"></div>
-        </div>
-        
-        <!-- カレンダー -->
-        <div class="section">
-            <div class="calendar-header">
-                <button class="calendar-nav" onclick="changeMonth(-1)">◀</button>
-                <h3 id="calendar-month"></h3>
-                <button class="calendar-nav" onclick="changeMonth(1)">▶</button>
+        <!-- 管理者ログインセクション -->
+        <div class="admin-section" id="loginSection">
+            <h2>管理者ログイン</h2>
+            <div class="login-form">
+                <div class="form-group">
+                    <label for="password">パスワード:</label>
+                    <input type="password" id="password" placeholder="パスワードを入力">
+                </div>
+                <button onclick="login()">ログイン</button>
             </div>
-            
-            <!-- 検索機能 -->
-            <div class="search-container">
-                <select id="staff-select" class="staff-select">
-                    <option value="">スタッフを選択...</option>
-                    <!-- 「掃除イレギュラー」オプションはJSで動的に追加 -->
-                </select>
-                <!-- ▼▼▼ 変更点: 表示ボタンは不要なため非表示に ▼▼▼ -->
-                <button id="search-button" class="search-button" style="display: none;">🔍 表示</button>
-                <button id="clear-button" class="clear-button" onclick="clearSearch()" style="display: none;">✕ クリア</button>
-            </div>
-            <div id="search-result" class="search-result"></div>
-            
-            <div class="calendar-grid" id="calendar"></div>
         </div>
         
-        <!-- 選択日の勤務者 -->
-        <div class="section" style="background-color: #e8f5e9;">
-            <h3 class="section-title">
-                📅 <span id="selected-date"></span>の勤務者
-            </h3>
-            <div id="selected-staff" class="staff-grid"></div>
+        <!-- 管理者アップロードセクション -->
+        <div class="admin-section hidden" id="uploadSection">
+            <h2>ファイルアップロード（管理者専用）</h2>
+            <div class="upload-area" id="uploadArea">
+                <p>ファイルをドラッグ＆ドロップまたは選択してください</p>
+                <input type="file" id="fileInput" multiple style="display: none;">
+                <button onclick="document.getElementById('fileInput').click()">ファイルを選択</button>
+            </div>
+            <button onclick="logout()">ログアウト</button>
+        </div>
+        
+        <!-- ファイル一覧セクション -->
+        <div class="file-list">
+            <h2>共有ファイル一覧</h2>
+            <div id="fileList" class="loading">
+                <p>読み込み中...</p>
+            </div>
         </div>
     </div>
-
-    <!-- カスタムアラート用のモーダルHTML -->
-    <div id="custom-alert" class="modal-overlay">
-        <div class="modal-content">
-            <p id="custom-alert-message"></p>
-            <button id="custom-alert-close" class="modal-close-button">OK</button>
-        </div>
-    </div>
-
-    <script>
+    
+    <!-- Firebase SDK -->
+    <script type="module">
+        import { initializeApp } from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js';
+        import { getStorage, ref, uploadBytes, getDownloadURL, listAll } from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-storage.js';
+        
+        // Firebase設定（後で実際の設定値に置き換えてください）
+        const firebaseConfig = {
+            apiKey: "YOUR_API_KEY",
+            authDomain: "YOUR_AUTH_DOMAIN",
+            projectId: "YOUR_PROJECT_ID",
+            storageBucket: "YOUR_STORAGE_BUCKET",
+            messagingSenderId: "YOUR_MESSAGING_SENDER_ID",
+            appId: "YOUR_APP_ID"
+        };
+        
+        // Firebaseの初期化
+        const app = initializeApp(firebaseConfig);
+        const storage = getStorage(app);
+        
         // グローバル変数
-        let attendanceData = {};
-        let selectedDate = new Date();
-        let currentMonth = new Date();
-        let uploadedFiles = [];
-        let useLocalStorage = true;
-        let searchQuery = '';
+        let isAdmin = false;
+        const ADMIN_PASSWORD = 'admin123'; // 実際の使用時は安全なパスワードに変更してください
         
-        // ローカルストレージが使用可能かチェック
-        function checkLocalStorage() {
-            try {
-                const test = '__localStorage_test__';
-                localStorage.setItem(test, test);
-                localStorage.removeItem(test);
-                return true;
-            } catch(e) {
-                console.warn('LocalStorage is not available. Running in memory-only mode.');
-                return false;
-            }
-        }
-
-        // カスタムアラート表示関数
-        function showCustomAlert(message) {
-            const modal = document.getElementById('custom-alert');
-            const messageP = document.getElementById('custom-alert-message');
-            messageP.textContent = message;
-            modal.style.display = 'flex';
+        // メッセージ表示
+        function showMessage(text, type) {
+            const messageEl = document.getElementById('message');
+            messageEl.className = `message ${type}`;
+            messageEl.textContent = text;
+            messageEl.style.display = 'block';
+            setTimeout(() => {
+                messageEl.style.display = 'none';
+            }, 5000);
         }
         
-        // 初期化
-        document.addEventListener('DOMContentLoaded', function() {
-            // ローカルストレージの可用性をチェック
-            useLocalStorage = checkLocalStorage();
-            
-            // ローカルストレージからデータを読み込む
-            if (useLocalStorage) {
-                const savedData = localStorage.getItem('clinicAttendanceData');
-                if (savedData) {
-                    try {
-                        attendanceData = JSON.parse(savedData);
-                    } catch(e) {
-                        console.error('Failed to parse saved data:', e);
-                        localStorage.removeItem('clinicAttendanceData'); // 破損データを削除
-                    }
-                }
-                
-                const savedFiles = localStorage.getItem('uploadedFiles');
-                if (savedFiles) {
-                    try {
-                        uploadedFiles = JSON.parse(savedFiles);
-                    } catch(e) {
-                        console.error('Failed to parse saved files:', e);
-                        localStorage.removeItem('uploadedFiles'); // 破損データを削除
-                    }
-                }
-            }
-            
-            // UIを初期化
-            updateTodayDate();
-            updateCalendar();
-            updateSelectedDate();
-            displayTodayStaff();
-            displaySelectedStaff();
-            displayUploadedFiles();
-            updateStaffList();
-            
-            // ▼▼▼ 変更点: イベントリスナー設定 ▼▼▼
-            document.getElementById('csv-upload').addEventListener('change', handleFileUpload);
-            // ドロップダウンの選択が変更されたらsearchStaff関数を呼び出す
-            document.getElementById('staff-select').addEventListener('change', searchStaff);
-            document.getElementById('custom-alert-close').addEventListener('click', () => {
-                document.getElementById('custom-alert').style.display = 'none';
-            });
-        });
-        
-        // 日付フォーマット関数
-        function formatDate(date) {
-            const year = date.getFullYear();
-            const month = String(date.getMonth() + 1).padStart(2, '0');
-            const day = String(date.getDate()).padStart(2, '0');
-            return `${year}-${month}-${day}`;
-        }
-        
-        function formatDateJP(date) {
-            const year = date.getFullYear();
-            const month = date.getMonth() + 1;
-            const day = date.getDate();
-            const weekdays = ['日', '月', '火', '水', '木', '金', '土'];
-            const weekday = weekdays[date.getDay()];
-            return `${year}年${month}月${day}日(${weekday})`;
-        }
-        
-        // 本日の日付を更新
-        function updateTodayDate() {
-            document.getElementById('today-date').textContent = formatDateJP(new Date());
-        }
-        
-        // 選択日を更新
-        function updateSelectedDate() {
-            document.getElementById('selected-date').textContent = formatDateJP(selectedDate);
-        }
-        
-        // CSVのパースされたデータを処理する関数
-        function processAttendanceData(data, fileName) {
-            // ファイル名から年月を推測 (例: "勤務表.2025.5.csv")
-            let year, month;
-            const match = fileName.match(/(\d{4})[^0-9]+(\d{1,2})/);
-            if(match) {
-                year = parseInt(match[1]);
-                month = parseInt(match[2]);
+        // ログイン処理
+        window.login = function() {
+            const password = document.getElementById('password').value;
+            if (password === ADMIN_PASSWORD) {
+                isAdmin = true;
+                document.getElementById('loginSection').classList.add('hidden');
+                document.getElementById('uploadSection').classList.remove('hidden');
+                showMessage('ログインしました', 'success');
+                document.getElementById('password').value = '';
             } else {
-                 // マッチしない場合、現在の年月を使用
-                const now = new Date();
-                year = now.getFullYear();
-                month = now.getMonth() + 1;
-                showCustomAlert(`ファイル名から年月を特定できませんでした。現在の年月 (${year}年${month}月) としてデータを読み込みます。`);
+                showMessage('パスワードが間違っています', 'error');
             }
-
-            // スタッフデータを解析
-            const monthData = {};
-            
-            // 6行目（インデックス5）からデータが始まると仮定
-            for (let i = 5; i < data.length; i++) {
-                const row = data[i];
-                if (!row || !row[1] || typeof row[1] !== 'string') continue;
-                
-                const staffName = row[1].trim();
-                // 集計行などの不要な行をスキップ
-                if (['出勤', '医師', '看・技', '事務', ''].includes(staffName)) continue;
-                
-                // 各日の勤務状況を確認 (D列から、インデックス3)
-                for (let day = 1; day <= 31; day++) {
-                    const cellValue = row[day + 2];
-                    
-                    // 数字の場合のみ勤務とみなす
-                    if (typeof cellValue === 'number' && cellValue > 0) {
-                        try {
-                            // 日付の妥当性チェック
-                            const d = new Date(year, month - 1, day);
-                            if (d.getFullYear() === year && d.getMonth() === month - 1 && d.getDate() === day) {
-                                const dateKey = formatDate(d);
-                                if (!monthData[dateKey]) {
-                                    monthData[dateKey] = [];
-                                }
-                                monthData[dateKey].push(staffName);
-                            }
-                        } catch (e) {
-                            // 無視
-                        }
-                    }
-                }
+        };
+        
+        // ログアウト処理
+        window.logout = function() {
+            isAdmin = false;
+            document.getElementById('loginSection').classList.remove('hidden');
+            document.getElementById('uploadSection').classList.add('hidden');
+            showMessage('ログアウトしました', 'success');
+        };
+        
+        // ファイルアップロード
+        async function uploadFile(file) {
+            try {
+                const storageRef = ref(storage, 'files/' + file.name);
+                const snapshot = await uploadBytes(storageRef, file);
+                showMessage(`${file.name} をアップロードしました`, 'success');
+                loadFileList();
+            } catch (error) {
+                showMessage('アップロードエラー: ' + error.message, 'error');
             }
-            return monthData;
         }
         
-        // ファイルアップロード処理
-        function handleFileUpload(event) {
-            const file = event.target.files[0];
-            if (!file) return;
-
-            const reader = new FileReader();
-            reader.onload = function(e) {
-                const buffer = e.target.result;
-                let encoding = 'utf-8';
-                try {
-                    new TextDecoder('utf-8', { fatal: true }).decode(buffer);
-                } catch (err) {
-                    encoding = 'shift_jis';
-                }
-
-                const text = new TextDecoder(encoding).decode(buffer);
-                const results = Papa.parse(text, {
-                    dynamicTyping: true,
-                    skipEmptyLines: false
-                });
-
-                if (results.errors.length > 0 || !results.data || results.data.length === 0) {
-                    console.error("PapaParse Errors:", results.errors);
-                    showCustomAlert('CSVファイルの解析中にエラーが発生しました。文字コードが正しいか確認してください。');
+        // ファイル一覧の読み込み
+        async function loadFileList() {
+            const fileListEl = document.getElementById('fileList');
+            fileListEl.innerHTML = '<p>読み込み中...</p>';
+            
+            try {
+                const listRef = ref(storage, 'files');
+                const result = await listAll(listRef);
+                
+                if (result.items.length === 0) {
+                    fileListEl.innerHTML = '<p>ファイルがありません</p>';
                     return;
                 }
-
-                try {
-                    const newData = processAttendanceData(results.data, file.name);
-
-                    // 既存データとマージ
-                    attendanceData = { ...attendanceData, ...newData };
-
-                    const newFileInfo = {
-                        name: file.name,
-                        uploadDate: new Date().toISOString(),
-                        id: Date.now()
-                    };
-                    uploadedFiles.push(newFileInfo);
-
-                    saveData();
-
-                    // UIを全体的に更新
-                    displayTodayStaff();
-                    displaySelectedStaff();
-                    displayUploadedFiles();
-                    updateCalendar();
-                    updateStaffList();
-
-                    showCustomAlert('ファイルのアップロードが完了しました！');
-                } catch (error) {
-                    console.error('Error processing file:', error);
-                    showCustomAlert('ファイルの処理中にエラーが発生しました。CSVファイルの形式を確認してください。');
+                
+                fileListEl.innerHTML = '';
+                
+                for (const itemRef of result.items) {
+                    const url = await getDownloadURL(itemRef);
+                    const fileItem = document.createElement('div');
+                    fileItem.className = 'file-item';
+                    fileItem.innerHTML = `
+                        <div>
+                            <div class="file-name">${itemRef.name}</div>
+                        </div>
+                        <a href="${url}" download class="download-btn">ダウンロード</a>
+                    `;
+                    fileListEl.appendChild(fileItem);
                 }
-            };
-            reader.onerror = function(err) {
-                console.error('File Read Error:', err);
-                showCustomAlert('CSVファイルの読み込みに失敗しました。ファイルが破損していないか、文字コードが正しいか確認してください。');
-            };
-            reader.readAsArrayBuffer(file);
-
-            event.target.value = '';
-        }
-        
-        // データ保存
-        function saveData() {
-            if (useLocalStorage) {
-                try {
-                    localStorage.setItem('clinicAttendanceData', JSON.stringify(attendanceData));
-                    localStorage.setItem('uploadedFiles', JSON.stringify(uploadedFiles));
-                } catch(e) {
-                    console.error('Failed to save to localStorage:', e);
-                    showCustomAlert('データの保存に失敗しました。ストレージの空き容量が不足している可能性があります。');
-                }
+            } catch (error) {
+                fileListEl.innerHTML = '<p>ファイルの読み込みに失敗しました</p>';
+                console.error(error);
             }
         }
         
-        // ファイル削除
-        function removeFile(fileId) {
-            uploadedFiles = uploadedFiles.filter(f => f.id !== fileId);
-            saveData();
-            displayUploadedFiles();
-        }
+        // ドラッグ＆ドロップ設定
+        const uploadArea = document.getElementById('uploadArea');
+        const fileInput = document.getElementById('fileInput');
         
-        // アップロード済みファイルを表示
-        function displayUploadedFiles() {
-            const container = document.getElementById('uploaded-files');
-            container.innerHTML = '';
-            if (uploadedFiles.length === 0) {
+        uploadArea.addEventListener('dragover', (e) => {
+            e.preventDefault();
+            uploadArea.classList.add('dragover');
+        });
+        
+        uploadArea.addEventListener('dragleave', () => {
+            uploadArea.classList.remove('dragover');
+        });
+        
+        uploadArea.addEventListener('drop', (e) => {
+            e.preventDefault();
+            uploadArea.classList.remove('dragover');
+            
+            if (!isAdmin) {
+                showMessage('ログインが必要です', 'error');
                 return;
             }
             
-            const title = document.createElement('h4');
-            title.style.cssText = "margin-top: 15px; margin-bottom: 10px; font-size: 14px;";
-            title.textContent = 'アップロード済みファイル:';
-            container.appendChild(title);
-
-            uploadedFiles.forEach(file => {
-                const fileDiv = document.createElement('div');
-                fileDiv.className = 'file-item';
-                fileDiv.innerHTML = `
-                    <span>${file.name}</span>
-                    <button class="delete-button" onclick="removeFile(${file.id})">削除</button>
-                `;
-                container.appendChild(fileDiv);
-            });
-        }
-        
-        // スタッフ表示グリッド生成
-        function createStaffGrid(staffList) {
-            if (!staffList || staffList.length === 0) {
-                return '<div class="no-data">この日の勤務者データがありません</div>';
+            const files = e.dataTransfer.files;
+            for (const file of files) {
+                uploadFile(file);
             }
-            return staffList.map(name => `<div class="staff-card">${name}</div>`).join('');
-        }
-
-        // 本日の勤務者を表示
-        function displayTodayStaff() {
-            const container = document.getElementById('today-staff');
-            const todayKey = formatDate(new Date());
-            const staff = attendanceData[todayKey] || [];
-            container.innerHTML = createStaffGrid(staff);
-        }
+        });
         
-        // 選択日の勤務者を表示
-        function displaySelectedStaff() {
-            const container = document.getElementById('selected-staff');
-            const selectedKey = formatDate(selectedDate);
-            const staff = attendanceData[selectedKey] || [];
-            container.innerHTML = createStaffGrid(staff);
-        }
-        
-        // カレンダーを更新
-        function updateCalendar() {
-            const calendarMonth = document.getElementById('calendar-month');
-            calendarMonth.textContent = `${currentMonth.getFullYear()}年${currentMonth.getMonth() + 1}月`;
-            
-            const calendar = document.getElementById('calendar');
-            calendar.innerHTML = '';
-            
-            const weekdays = ['日', '月', '火', '水', '木', '金', '土'];
-            weekdays.forEach(day => {
-                const header = document.createElement('div');
-                header.className = 'weekday-header';
-                if (day === '日') header.style.color = 'red';
-                if (day === '土') header.style.color = 'blue';
-                header.textContent = day;
-                calendar.appendChild(header);
-            });
-            
-            const year = currentMonth.getFullYear();
-            const month = currentMonth.getMonth();
-            const firstDayOfMonth = new Date(year, month, 1);
-            
-            const startDate = new Date(firstDayOfMonth);
-            startDate.setDate(startDate.getDate() - firstDayOfMonth.getDay());
-            
-            const today = new Date();
-            today.setHours(0,0,0,0);
-            const selected = new Date(selectedDate);
-            selected.setHours(0,0,0,0);
-
-            for (let i = 0; i < 42; i++) {
-                const date = new Date(startDate);
-                date.setDate(startDate.getDate() + i);
-                const dateKey = formatDate(date);
-                
-                const dayDiv = document.createElement('div');
-                dayDiv.className = 'calendar-day';
-                
-                if (date.getMonth() !== month) dayDiv.classList.add('other-month');
-                if (date.getTime() === today.getTime()) dayDiv.classList.add('today');
-                if (date.getTime() === selected.getTime()) dayDiv.classList.add('selected');
-                
-                if (searchQuery && date.getMonth() === month) {
-                    if (searchQuery === 'irregular-cleaning') {
-                        const dayOfWeek = date.getDay();
-                        if (dayOfWeek >= 2 && dayOfWeek <= 5) {
-                            const prevDate = new Date(date);
-                            prevDate.setDate(date.getDate() - 1);
-                            const prevDateKey = formatDate(prevDate);
-                            const staffOnPrevDay = attendanceData[prevDateKey] || [];
-                            if (!staffOnPrevDay.includes('ぽん')) {
-                                dayDiv.classList.add('search-highlight');
-                            }
-                        }
-                    } else {
-                        const staffOnDay = attendanceData[dateKey] || [];
-                        if (staffOnDay.includes(searchQuery)) {
-                            dayDiv.classList.add('search-highlight');
-                        }
-                    }
-                }
-                
-                const dayNumber = document.createElement('div');
-                dayNumber.className = 'calendar-day-number';
-                dayNumber.textContent = date.getDate();
-                dayDiv.appendChild(dayNumber);
-                
-                if (date.getMonth() === month && attendanceData[dateKey]) {
-                    const staff = attendanceData[dateKey];
-                    const namesDiv = document.createElement('div');
-                    namesDiv.className = 'calendar-names';
-                    
-                    const doctors = staff.filter(name => ['ロックン', 'ぽん'].includes(name)).map(n => n.slice(0,1)).join('・');
-                    const karachan = staff.includes('からちゃん');
-                    const hayabuchi = staff.includes('早渕');
-
-                    if(doctors) {
-                        const el = document.createElement('div');
-                        el.className = 'calendar-doctor';
-                        el.textContent = doctors;
-                        namesDiv.appendChild(el);
-                    }
-                     if(karachan) {
-                        const el = document.createElement('div');
-                        el.className = 'calendar-staff';
-                        el.textContent = 'から';
-                        namesDiv.appendChild(el);
-                    }
-                    if(hayabuchi) {
-                        const el = document.createElement('div');
-                        el.className = 'calendar-special';
-                        el.textContent = '早';
-                        namesDiv.appendChild(el);
-                    }
-                    dayDiv.appendChild(namesDiv);
-                }
-                
-                dayDiv.onclick = () => {
-                    if (date.getMonth() === month) {
-                        selectedDate = date;
-                        updateSelectedDate();
-                        displaySelectedStaff();
-                        updateCalendar();
-                    }
-                };
-                
-                calendar.appendChild(dayDiv);
-            }
-        }
-        
-        // 月を変更
-        function changeMonth(direction) {
-            currentMonth.setMonth(currentMonth.getMonth() + direction);
-            updateCalendar();
-        }
-        
-        // ▼▼▼ 変更点: スタッフ検索関数 ▼▼▼
-        function searchStaff() {
-            const staffSelect = document.getElementById('staff-select');
-            searchQuery = staffSelect.value;
-            
-            // プレースホルダー（「スタッフを選択...」）が選ばれたら、検索をクリアして終了
-            if (!searchQuery) {
-                clearSearch();
+        fileInput.addEventListener('change', (e) => {
+            if (!isAdmin) {
+                showMessage('ログインが必要です', 'error');
                 return;
             }
             
-            let foundCount = 0;
-            const year = currentMonth.getFullYear();
-            const month = currentMonth.getMonth();
-            const daysInMonth = new Date(year, month + 1, 0).getDate();
-            
-            if (searchQuery === 'irregular-cleaning') {
-                for (let day = 1; day <= daysInMonth; day++) {
-                    const date = new Date(year, month, day);
-                    const dayOfWeek = date.getDay();
-                    if (dayOfWeek >= 2 && dayOfWeek <= 5) { // Tue-Fri
-                        const prevDate = new Date(date);
-                        prevDate.setDate(date.getDate() - 1);
-                        const prevDateKey = formatDate(prevDate);
-                        const staffOnPrevDay = attendanceData[prevDateKey] || [];
-                        if (!staffOnPrevDay.includes('ぽん')) {
-                            foundCount++;
-                        }
-                    }
-                }
-            } else {
-                for (let day = 1; day <= daysInMonth; day++) {
-                    const dateKey = `${year}-${String(month + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
-                    const staff = attendanceData[dateKey] || [];
-                    if (staff.includes(searchQuery)) {
-                        foundCount++;
-                    }
-                }
+            const files = e.target.files;
+            for (const file of files) {
+                uploadFile(file);
             }
-            
-            const searchResult = document.getElementById('search-result');
-            const clearButton = document.getElementById('clear-button');
-            
-            const displayName = searchQuery === 'irregular-cleaning' ? '掃除イレギュラー' : `「${searchQuery}」さん`;
-            searchResult.textContent = `${displayName}の今月の該当日は ${foundCount}日 です`;
-            searchResult.style.display = 'block';
-            clearButton.style.display = 'inline-block';
-            
-            updateCalendar(); // ハイライトを適用して再描画
-        }
+        });
         
-        // 検索クリア
-        function clearSearch() {
-            searchQuery = '';
-            document.getElementById('staff-select').value = '';
-            document.getElementById('search-result').style.display = 'none';
-            document.getElementById('clear-button').style.display = 'none';
-            updateCalendar();
-        }
+        // エンターキーでログイン
+        document.getElementById('password').addEventListener('keypress', (e) => {
+            if (e.key === 'Enter') {
+                login();
+            }
+        });
         
-        // スタッフリストを更新
-        function updateStaffList() {
-            const staffSet = new Set();
-            
-            Object.values(attendanceData).forEach(dayStaff => {
-                dayStaff.forEach(name => staffSet.add(name));
-            });
-            
-            const staffSelect = document.getElementById('staff-select');
-            const currentSelection = staffSelect.value;
-            staffSelect.innerHTML = '<option value="">スタッフを選択...</option>';
-            
-            const irregularOption = document.createElement('option');
-            irregularOption.value = 'irregular-cleaning';
-            irregularOption.textContent = '掃除イレギュラー';
-            staffSelect.appendChild(irregularOption);
-            
-            const sortedStaff = Array.from(staffSet).sort((a, b) => a.localeCompare(b, 'ja'));
-            sortedStaff.forEach(name => {
-                const option = document.createElement('option');
-                option.value = name;
-                option.textContent = name;
-                staffSelect.appendChild(option);
-            });
-
-            staffSelect.value = currentSelection;
-        }
+        // 初期読み込み
+        loadFileList();
     </script>
 </body>
 </html>
